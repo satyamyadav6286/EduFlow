@@ -28,7 +28,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-const CourseTab = () => {
+const CourseTab = ({ courseData }) => {
   
   const [input, setInput] = useState({
     courseTitle: "",
@@ -42,25 +42,24 @@ const CourseTab = () => {
 
   const params = useParams();
   const courseId = params.courseId;
-  const { data: courseByIdData, isLoading: courseByIdLoading , refetch} =
-    useGetCourseByIdQuery(courseId);
+  const { refetch } = useGetCourseByIdQuery(courseId);
 
-    const [publishCourse, {}] = usePublishCourseMutation();
+  const [publishCourse] = usePublishCourseMutation();
  
   useEffect(() => {
-    if (courseByIdData?.course) { 
-        const course = courseByIdData?.course;
+    if (courseData?.course) { 
+        const course = courseData.course;
       setInput({
-        courseTitle: course.courseTitle,
-        subTitle: course.subTitle,
-        description: course.description,
-        category: course.category,
-        courseLevel: course.courseLevel,
-        coursePrice: course.coursePrice,
+        courseTitle: course.courseTitle || "",
+        subTitle: course.subTitle || "",
+        description: course.description || "",
+        category: course.category || "",
+        courseLevel: course.courseLevel || "",
+        coursePrice: course.coursePrice || "",
         courseThumbnail: "",
       });
     }
-  }, [courseByIdData]);
+  }, [courseData]);
 
   const [previewThumbnail, setPreviewThumbnail] = useState("");
   const navigate = useNavigate();
@@ -91,16 +90,38 @@ const CourseTab = () => {
   };
 
   const updateCourseHandler = async () => {
-    const formData = new FormData();
-    formData.append("courseTitle", input.courseTitle);
-    formData.append("subTitle", input.subTitle);
-    formData.append("description", input.description);
-    formData.append("category", input.category);
-    formData.append("courseLevel", input.courseLevel);
-    formData.append("coursePrice", input.coursePrice);
-    formData.append("courseThumbnail", input.courseThumbnail);
-
-    await editCourse({ formData, courseId });
+    try {
+      console.log("Updating course with ID:", courseId);
+      
+      // Create FormData for the course update with image support
+      const formData = new FormData();
+      
+      // Add all the text fields
+      formData.append("courseTitle", input.courseTitle || courseData?.course?.courseTitle);
+      formData.append("subTitle", input.subTitle || courseData?.course?.subTitle);
+      formData.append("description", input.description || courseData?.course?.description);
+      formData.append("category", input.category || courseData?.course?.category);
+      formData.append("courseLevel", input.courseLevel || courseData?.course?.courseLevel);
+      formData.append("coursePrice", input.coursePrice || courseData?.course?.coursePrice);
+      
+      // Add the thumbnail if selected
+      if (input.courseThumbnail) {
+        formData.append("courseThumbnail", input.courseThumbnail);
+      }
+      
+      // Use the editCourse mutation
+      const response = await editCourse({courseId, formData});
+      
+      if (response.error) {
+        throw new Error(response.error.data?.message || "Failed to update course");
+      }
+      
+      // Success case is handled in the useEffect
+      refetch();
+    } catch (error) {
+      console.error("Error updating course:", error);
+      toast.error(error.message || "Failed to update course");
+    }
   };
 
   const publishStatusHandler = async (action) => {
@@ -117,14 +138,16 @@ const CourseTab = () => {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success(data.message || "Course update.");
+      toast.success(data?.message || "Course updated successfully.");
+      refetch();
     }
     if (error) {
-      toast.error(error.data.message || "Failed to update course");
+      toast.error(error?.data?.message || "Failed to update course");
     }
-  }, [isSuccess, error]);
+  }, [isSuccess, error, refetch]);
 
-  if(courseByIdLoading) return <h1>Loading...</h1>
+  const course = courseData?.course;
+  if (!course) return null;
  
   return (
     <Card>
@@ -136,10 +159,13 @@ const CourseTab = () => {
           </CardDescription>
         </div>
         <div className="space-x-2">
-          <Button disabled={courseByIdData?.course.lectures.length === 0} variant="outline" onClick={()=> publishStatusHandler(courseByIdData?.course.isPublished ? "false" : "true")}>
-            {courseByIdData?.course.isPublished ? "Unpublished" : "Publish"}
+          <Button 
+            disabled={!course.lectures || course.lectures.length === 0} 
+            variant="outline" 
+            onClick={()=> publishStatusHandler(course.isPublished ? "false" : "true")}
+          >
+            {course.isPublished ? "Unpublish" : "Publish"}
           </Button>
-          <Button>Remove Course</Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -197,6 +223,11 @@ const CourseTab = () => {
                     <SelectItem value="Docker">Docker</SelectItem>
                     <SelectItem value="MongoDB">MongoDB</SelectItem>
                     <SelectItem value="HTML">HTML</SelectItem>
+                    <SelectItem value="Web Development">Web Development</SelectItem>
+                    <SelectItem value="Mobile Development">Mobile Development</SelectItem>
+                    <SelectItem value="Machine Learning">Machine Learning</SelectItem>
+                    <SelectItem value="Web Design">Web Design</SelectItem>
+                    <SelectItem value="Programming Languages">Programming Languages</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -248,9 +279,9 @@ const CourseTab = () => {
               />
             )}
           </div>
-          <div>
-            <Button onClick={() => navigate("/admin/course")} variant="outline">
-              Cancel
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => navigate("/admin/course")}>
+              Back
             </Button>
             <Button disabled={isLoading} onClick={updateCourseHandler}>
               {isLoading ? (
@@ -259,7 +290,7 @@ const CourseTab = () => {
                   Please wait
                 </>
               ) : (
-                "Save"
+                "Update"
               )}
             </Button>
           </div>

@@ -1,4 +1,4 @@
-import { Menu, School } from "lucide-react";
+import { Award, Menu, School } from "lucide-react";
 import React, { useEffect } from "react";
 import {
   DropdownMenu,
@@ -40,7 +40,7 @@ const Navbar = () => {
       toast.success(data?.message || "User log out.");
       navigate("/login");
     }
-  }, [isSuccess]);
+  }, [isSuccess, data, navigate]);
 
   return (
     <div className="h-16 dark:bg-[#020817] bg-white border-b dark:border-b-gray-800 border-b-gray-200 fixed top-0 left-0 right-0 duration-300 z-10">
@@ -50,8 +50,14 @@ const Navbar = () => {
           <School size={"30"} />
           <Link to="/">
             <h1 className="hidden md:block font-extrabold text-2xl">
-              E-Learning
+              EduFlow
             </h1>
+          </Link>
+        </div>
+        {/* Navigation links */}
+        <div className="flex items-center gap-4">
+          <Link to="/verify-certificate" className="flex items-center gap-1 text-sm hover:text-blue-500">
+            <Award size={16} /> Verify Certificate
           </Link>
         </div>
         {/* User icons and dark mode icon  */}
@@ -103,7 +109,7 @@ const Navbar = () => {
       </div>
       {/* Mobile device  */}
       <div className="flex md:hidden items-center justify-between px-4 h-full">
-        <h1 className="font-extrabold text-2xl">E-learning</h1>
+        <h1 className="font-extrabold text-2xl">EduFlow</h1>
         <MobileNavbar user={user}/>
       </div>
     </div>
@@ -114,6 +120,17 @@ export default Navbar;
 
 const MobileNavbar = ({user}) => {
   const navigate = useNavigate();
+  const [logoutUser] = useLogoutUserMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      toast.success("User logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Failed to log out");
+    }
+  };
   
   return (
     <Sheet>
@@ -128,14 +145,17 @@ const MobileNavbar = ({user}) => {
       </SheetTrigger>
       <SheetContent className="flex flex-col">
         <SheetHeader className="flex flex-row items-center justify-between mt-2">
-          <SheetTitle> <Link to="/">E-Learning</Link></SheetTitle>
+          <SheetTitle> <Link to="/">EduFlow</Link></SheetTitle>
           <DarkMode />
         </SheetHeader>
         <Separator className="mr-2" />
         <nav className="flex flex-col space-y-4">
+          <Link to="/verify-certificate" className="flex items-center gap-1">
+            <Award size={16} /> Verify Certificate
+          </Link>
           <Link to="/my-learning">My Learning</Link>
           <Link to="/profile">Edit Profile</Link>
-          <p>Log out</p>
+          <p className="cursor-pointer" onClick={handleLogout}>Log out</p>
         </nav>
         {user?.role === "instructor" && (
           <SheetFooter>

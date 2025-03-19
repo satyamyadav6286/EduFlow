@@ -16,6 +16,11 @@ import EditLecture from "./pages/admin/lecture/EditLecture";
 import CourseDetail from "./pages/student/CourseDetail";
 import CourseProgress from "./pages/student/CourseProgress";
 import SearchPage from "./pages/student/SearchPage";
+import ContactMessages from "./pages/admin/ContactMessages";
+import Testimonials from "./components/Testimonials";
+import ContactForm from "./components/ContactForm";
+import Footer from "./components/Footer";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import {
   AdminRoute,
   AuthenticatedUser,
@@ -23,11 +28,13 @@ import {
 } from "./components/ProtectedRoutes";
 import PurchaseCourseProtectedRoute from "./components/PurchaseCourseProtectedRoute";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { ErrorBoundary, NotFound } from "./components/ErrorBoundary";
 
 const appRouter = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
+    errorElement: <ErrorBoundary />,
     children: [
       {
         path: "/",
@@ -35,6 +42,9 @@ const appRouter = createBrowserRouter([
           <>
             <HeroSection />
             <Courses />
+            <Testimonials />
+            <ContactForm />
+            <Footer />
           </>
         ),
       },
@@ -88,6 +98,10 @@ const appRouter = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "verify-certificate",
+        element: <VerifyCertificate />,
+      },
 
       // admin routes start from here
       {
@@ -122,8 +136,17 @@ const appRouter = createBrowserRouter([
             path: "course/:courseId/lecture/:lectureId",
             element: <EditLecture />,
           },
+          {
+            path: "messages",
+            element: <ContactMessages />,
+          },
         ],
       },
+      // Catch-all route for 404 errors
+      {
+        path: "*",
+        element: <NotFound />
+      }
     ],
   },
 ]);

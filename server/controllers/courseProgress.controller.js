@@ -1,5 +1,6 @@
 import { CourseProgress } from "../models/courseProgress.js";
 import { Course } from "../models/course.model.js";
+import { Certificate } from "../models/certificate.model.js";
 
 export const getCourseProgress = async (req, res) => {
   try {
@@ -20,6 +21,21 @@ export const getCourseProgress = async (req, res) => {
       });
     }
 
+    // Check if user has a certificate for this course
+    const certificate = await Certificate.findOne({
+      userId,
+      courseId,
+    });
+
+    let certificateInfo = null;
+    if (certificate) {
+      certificateInfo = {
+        id: certificate.certificateId,
+        issuedDate: certificate.issuedDate,
+        completionDate: certificate.completionDate,
+      };
+    }
+
     // Step-2 If no progress found, return course details with an empty progress
     if (!courseProgress) {
       return res.status(200).json({
@@ -27,20 +43,26 @@ export const getCourseProgress = async (req, res) => {
           courseDetails,
           progress: [],
           completed: false,
+          certificate: certificateInfo,
         },
       });
     }
 
-    // Step-3 Return the user's course progress alog with course details
+    // Step-3 Return the user's course progress along with course details
     return res.status(200).json({
       data: {
         courseDetails,
         progress: courseProgress.lectureProgress,
         completed: courseProgress.completed,
+        certificate: certificateInfo,
       },
     });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      error,
+      message: "Internal Server Error",
+    });
   }
 };
 

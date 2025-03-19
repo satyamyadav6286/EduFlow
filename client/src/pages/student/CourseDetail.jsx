@@ -1,4 +1,4 @@
-import BuyCourseButton from "@/components/BuyCourseButton";
+import BuyCourseButtonRazorpay from "@/components/BuyCourseButtonRazorpay";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,10 +9,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import MediaDisplay from "@/components/MediaDisplay";
 import { useGetCourseDetailWithStatusQuery } from "@/features/api/purchaseApi";
 import { BadgeInfo, Lock, PlayCircle } from "lucide-react";
-import React from "react";
-import ReactPlayer from "react-player";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 const CourseDetail = () => {
@@ -22,39 +22,63 @@ const CourseDetail = () => {
   const { data, isLoading, isError } =
     useGetCourseDetailWithStatusQuery(courseId);
 
-  if (isLoading) return <h1>Loading...</h1>;
-  if (isError) return <h>Failed to load course details</h>;
+  if (isLoading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+  
+  if (isError) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="text-center">
+        <p className="text-xl font-semibold text-red-500">Failed to load course details</p>
+        <p className="text-gray-500">Please try refreshing the page</p>
+      </div>
+    </div>
+  );
 
   const { course, purchased } = data;
-  console.log(purchased);
 
   const handleContinueCourse = () => {
     if(purchased){
-      navigate(`/course-progress/${courseId}`)
+      navigate(`/course-progress/${courseId}`);
     }
-  }
+  };
 
   return (
     <div className="space-y-5">
-      <div className="bg-[#2D2F31] text-white">
-        <div className="max-w-7xl mx-auto py-8 px-4 md:px-8 flex flex-col gap-2">
-          <h1 className="font-bold text-2xl md:text-3xl">
-            {course?.courseTitle}
-          </h1>
-          <p className="text-base md:text-lg">Course Sub-title</p>
-          <p>
-            Created By{" "}
-            <span className="text-[#C0C4FC] underline italic">
-              {course?.creator.name}
-            </span>
-          </p>
-          <div className="flex items-center gap-2 text-sm">
-            <BadgeInfo size={16} />
-            <p>Last updated {course?.createdAt.split("T")[0]}</p>
+      <div className="bg-[#0f172a] text-white">
+        <div className="max-w-7xl mx-auto py-8 px-4 md:px-8 flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col gap-2 md:w-2/3">
+            <h1 className="font-bold text-2xl md:text-3xl">
+              {course?.courseTitle}
+            </h1>
+            <p className="text-base md:text-lg">{course?.subTitle || "Comprehensive course"}</p>
+            <p>
+              Created By{" "}
+              <span className="text-[#C0C4FC] underline italic">
+                {course?.creator.name}
+              </span>
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <BadgeInfo size={16} />
+              <p>Last updated {course?.createdAt.split("T")[0]}</p>
+            </div>
+            <p>Students enrolled: {course?.enrolledStudents.length}</p>
           </div>
-          <p>Students enrolled: {course?.enrolledStudents.length}</p>
+          
+          <div className="md:w-1/3 rounded-md overflow-hidden">
+            <MediaDisplay
+              type="image"
+              src={course?.courseThumbnail}
+              alt={course?.courseTitle || "Course thumbnail"}
+              className="w-full h-[200px] object-cover"
+              fallbackImage="https://via.placeholder.com/600x400?text=Course+Image"
+            />
+          </div>
         </div>
       </div>
+
       <div className="max-w-7xl mx-auto my-5 px-4 md:px-8 flex flex-col lg:flex-row justify-between gap-10">
         <div className="w-full lg:w-1/2 space-y-5">
           <h1 className="font-bold text-xl md:text-2xl">Description</h1>
@@ -65,13 +89,17 @@ const CourseDetail = () => {
           <Card>
             <CardHeader>
               <CardTitle>Course Content</CardTitle>
-              <CardDescription>4 lectures</CardDescription>
+              <CardDescription>{course.lectures.length} lectures</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {course.lectures.map((lecture, idx) => (
                 <div key={idx} className="flex items-center gap-3 text-sm">
                   <span>
-                    {true ? <PlayCircle size={14} /> : <Lock size={14} />}
+                    {lecture.isPreviewFree || purchased ? (
+                      <PlayCircle size={14} className="text-blue-500" />
+                    ) : (
+                      <Lock size={14} />
+                    )}
                   </span>
                   <p>{lecture.lectureTitle}</p>
                 </div>
@@ -80,27 +108,43 @@ const CourseDetail = () => {
           </Card>
         </div>
         <div className="w-full lg:w-1/3">
-          <Card>
+          <Card className="sticky top-20">
             <CardContent className="p-4 flex flex-col">
               <div className="w-full aspect-video mb-4">
-                <ReactPlayer
-                  width="100%"
-                  height={"100%"}
-                  url={course.lectures[0].videoUrl}
-                  controls={true}
-                />
+                {course.lectures.length > 0 ? (
+                  <MediaDisplay
+                    type="video"
+                    src={course.lectures[0].videoUrl}
+                    className="w-full h-full rounded-lg overflow-hidden"
+                    videoProps={{
+                      controls: true,
+                      playing: false,
+                      playbackRate: 1.0
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <p className="text-gray-500">No preview available</p>
+                  </div>
+                )}
               </div>
-              <h1>Lecture title</h1>
+              <h1 className="font-medium">{course.lectures[0]?.lectureTitle || "No lectures available"}</h1>
               <Separator className="my-2" />
-              <h1 className="text-lg md:text-xl font-semibold">Course Price</h1>
+              <h1 className="text-xl md:text-2xl font-bold">₹{course.coursePrice || 0}</h1>
+              
+              <div className="mt-4">
+                {purchased ? (
+                  <Button 
+                    onClick={handleContinueCourse}
+                    className="w-full"
+                  >
+                    Continue Learning
+                  </Button>
+                ) : (
+                  <BuyCourseButtonRazorpay courseId={courseId} />
+                )}
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-center p-4">
-              {purchased ? (
-                <Button onClick={handleContinueCourse} className="w-full">Continue Course</Button>
-              ) : (
-                <BuyCourseButton courseId={courseId} />
-              )}
-            </CardFooter>
           </Card>
         </div>
       </div>

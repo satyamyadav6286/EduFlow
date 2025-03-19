@@ -65,17 +65,17 @@ const Login = () => {
 
   useEffect(() => {
     if(registerIsSuccess && registerData){
-      toast.success(registerData.message || "Signup successful.")
+      toast.success(registerData?.message || "Signup successful.")
     }
     if(registerError){
-      toast.error(registerError.data.message || "Signup Failed");
+      toast.error(registerError?.data?.message || "Signup Failed");
     }
     if(loginIsSuccess && loginData){
-      toast.success(loginData.message || "Login successful.");
+      toast.success(loginData?.message || "Login successful.");
       navigate("/");
     }
     if(loginError){ 
-      toast.error(loginError.data.message || "login Failed");
+      toast.error(loginError?.data?.message || "Login Failed");
     }
   }, [
     loginIsLoading,
@@ -84,6 +84,9 @@ const Login = () => {
     registerData,
     loginError,
     registerError,
+    loginIsSuccess,
+    registerIsSuccess,
+    navigate
   ]);
 
   return (
@@ -109,7 +112,7 @@ const Login = () => {
                   name="name"
                   value={signupInput.name}
                   onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. patel"
+                  placeholder="Eg. Satyam Yadav"
                   required="true"
                 />
               </div>
@@ -120,7 +123,7 @@ const Login = () => {
                   name="email"
                   value={signupInput.email}
                   onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. patel@gmail.com"
+                  placeholder="Eg. xyz@gmail.com"
                   required="true"
                 />
               </div>
@@ -131,7 +134,7 @@ const Login = () => {
                   name="password"
                   value={signupInput.password}
                   onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. xyz"
+                  placeholder="Eg. xyz@123"
                   required="true"
                 />
               </div>
@@ -169,7 +172,7 @@ const Login = () => {
                   name="email"
                   value={loginInput.email}
                   onChange={(e) => changeInputHandler(e, "login")}
-                  placeholder="Eg. patel@gmail.com"
+                  placeholder="Eg. xyz@gmail.com"
                   required="true"
                 />
               </div>
@@ -180,7 +183,7 @@ const Login = () => {
                   name="password"
                   value={loginInput.password}
                   onChange={(e) => changeInputHandler(e, "login")}
-                  placeholder="Eg. xyz"
+                  placeholder="Eg. xyz@123"
                   required="true"
                 />
               </div>

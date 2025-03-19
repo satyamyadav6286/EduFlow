@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const COURSE_API = "http://localhost:8080/api/v1/course";
+const COURSE_API = "http://localhost:3000/api/v1/course";
 
 export const courseApi = createApi({
   reducerPath: "courseApi",
@@ -20,24 +20,37 @@ export const courseApi = createApi({
     }),
     getSearchCourse:builder.query({
       query: ({searchQuery, categories, sortByPrice}) => {
-        // Build qiery string
-        let queryString = `/search?query=${encodeURIComponent(searchQuery)}`
+        // Build query string
+        let queryString = `/search?query=${encodeURIComponent(searchQuery || '')}`
 
-        // append cateogry 
+        // append categories - ensure they are passed exactly as stored in the database
         if(categories && categories.length > 0) {
-          const categoriesString = categories.map(encodeURIComponent).join(",");
-          queryString += `&categories=${categoriesString}`; 
+          const categoriesString = categories.join(",");
+          queryString += `&categories=${encodeURIComponent(categoriesString)}`; 
         }
 
-        // Append sortByPrice is available
+        // Append sortByPrice if available
         if(sortByPrice){
           queryString += `&sortByPrice=${encodeURIComponent(sortByPrice)}`; 
         }
+        
+        console.log("Search query string:", queryString);
 
         return {
-          url:queryString,
-          method:"GET", 
+          url: queryString,
+          method: "GET", 
         }
+      },
+      // Handle error and empty responses
+      transformErrorResponse: (response) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to search courses'
+        };
+      },
+      transformResponse: (response) => {
+        if (!response) return { courses: [] };
+        return response;
       }
     }),
     getPublishedCourse: builder.query({
@@ -45,6 +58,17 @@ export const courseApi = createApi({
         url: "/published-courses",
         method: "GET",
       }),
+      // Handle error and empty responses
+      transformErrorResponse: (response) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch published courses'
+        };
+      },
+      transformResponse: (response) => {
+        if (!response) return { courses: [] };
+        return response;
+      }
     }),
     getCreatorCourse: builder.query({
       query: () => ({
@@ -52,12 +76,29 @@ export const courseApi = createApi({
         method: "GET",
       }),
       providesTags: ["Refetch_Creator_Course"],
+      // Handle error and empty responses
+      transformErrorResponse: (response) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch your courses'
+        };
+      },
+      transformResponse: (response) => {
+        if (!response) return { courses: [] };
+        return response;
+      }
     }),
     editCourse: builder.mutation({
-      query: ({ formData, courseId }) => ({
+      query: ({ courseId, formData }) => ({
         url: `/${courseId}`,
         method: "PUT",
         body: formData,
+        formData: true, // This tells RTK Query that we're sending FormData
+        // Remove the Content-Type header to let the browser set it with the boundary
+        prepareHeaders: (headers) => {
+          headers.delete('Content-Type');
+          return headers;
+        },
       }),
       invalidatesTags: ["Refetch_Creator_Course"],
     }),
@@ -66,6 +107,17 @@ export const courseApi = createApi({
         url: `/${courseId}`,
         method: "GET",
       }),
+      // Handle error and empty responses
+      transformErrorResponse: (response) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch course details'
+        };
+      },
+      transformResponse: (response) => {
+        if (!response || !response.course) return { course: null };
+        return response;
+      }
     }),
     createLecture: builder.mutation({
       query: ({ lectureTitle, courseId }) => ({
@@ -80,6 +132,17 @@ export const courseApi = createApi({
         method: "GET",
       }),
       providesTags: ["Refetch_Lecture"],
+      // Handle error and empty responses
+      transformErrorResponse: (response) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch lectures'
+        };
+      },
+      transformResponse: (response) => {
+        if (!response || !response.lectures) return { lectures: [] };
+        return response;
+      }
     }),
     editLecture: builder.mutation({
       query: ({
@@ -113,6 +176,12 @@ export const courseApi = createApi({
         method: "PATCH",
       }),
     }),
+    removeCourse: builder.mutation({
+      query: (courseId) => ({
+        url: `/${courseId}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 export const {
@@ -128,4 +197,5 @@ export const {
   useRemoveLectureMutation,
   useGetLectureByIdQuery,
   usePublishCourseMutation,
+  useRemoveCourseMutation,
 } = courseApi;

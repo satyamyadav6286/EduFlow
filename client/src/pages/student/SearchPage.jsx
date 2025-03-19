@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Filter from "./Filter";
 import SearchResult from "./SearchResult";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetSearchCourseQuery } from "@/features/api/courseApi";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SearchPage = () => {
@@ -12,16 +12,28 @@ const SearchPage = () => {
   const query = searchParams.get("query");
   const [selectedCategories, setSelectedCatgories] = useState([]);
   const [sortByPrice, setSortByPrice] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data, isLoading } = useGetSearchCourseQuery({
-    searchQuery:query,
-    categories:selectedCategories,
+  const { data, isLoading, refetch } = useGetSearchCourseQuery({
+    searchQuery: query,
+    categories: selectedCategories,
     sortByPrice
   });
+
+  // When filter changes, set refreshing state
+  useEffect(() => {
+    if (isRefreshing) {
+      const timer = setTimeout(() => {
+        setIsRefreshing(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isRefreshing]);
 
   const isEmpty = !isLoading && data?.courses.length === 0;
 
   const handleFilterChange = (categories, price) => {
+    setIsRefreshing(true);
     setSelectedCatgories(categories);
     setSortByPrice(price);
   }
@@ -30,21 +42,40 @@ const SearchPage = () => {
       <div className="my-6">
         <h1 className="font-bold text-xl md:text-2xl">result for "{query}"</h1>
         <p>
-          Showing results for{""}
+          Showing results for{" "}
           <span className="text-blue-800 font-bold italic">{query}</span>
+          {selectedCategories.length > 0 && (
+            <> in categories: <span className="text-blue-800 font-bold italic">{selectedCategories.join(", ")}</span></>
+          )}
+          {sortByPrice && (
+            <> sorted by <span className="text-blue-800 font-bold italic">{sortByPrice === "low" ? "price: low to high" : "price: high to low"}</span></>
+          )}
         </p>
       </div>
       <div className="flex flex-col md:flex-row gap-10">
         <Filter handleFilterChange={handleFilterChange}/>
         <div className="flex-1">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, idx) => (
-              <CourseSkeleton key={idx} />
-            ))
+          {isLoading || isRefreshing ? (
+            <>
+              {isRefreshing && (
+                <div className="flex items-center justify-center mb-4">
+                  <RefreshCw className="animate-spin text-blue-500 mr-2" />
+                  <span className="text-blue-500">Updating results...</span>
+                </div>
+              )}
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <CourseSkeleton key={idx} />
+              ))}
+            </>
           ) : isEmpty ? (
             <CourseNotFound />
           ) : (
-            data?.courses?.map((course) => <SearchResult key={course._id} course={course}/>)
+            <>
+              <div className="mb-4 text-gray-600">
+                Found {data.courses.length} course{data.courses.length !== 1 ? 's' : ''}
+              </div>
+              {data?.courses?.map((course) => <SearchResult key={course._id} course={course}/>)}
+            </>
           )}
         </div>
       </div>
