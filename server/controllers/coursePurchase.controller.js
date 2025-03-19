@@ -165,14 +165,25 @@ export const getCourseDetailWithPurchaseStatus = async (req, res) => {
   }
 };
 
-export const getAllPurchasedCourse = async (_, res) => {
+export const getAllPurchasedCourse = async (req, res) => {
   try {
+    const userId = req.id; // Get user ID from auth middleware
+
+    // Filter purchases by the current user's ID
     const purchasedCourse = await CoursePurchase.find({
+      userId: userId,
       status: "completed",
-    }).populate("courseId");
+    }).populate({
+      path: "courseId",
+      select: "courseTitle subTitle coursePrice thumbnail category instructor",
+      populate: {
+        path: "instructor",
+        select: "name"
+      }
+    });
     
-    if (!purchasedCourse) {
-      return res.status(404).json({
+    if (!purchasedCourse || purchasedCourse.length === 0) {
+      return res.status(200).json({
         purchasedCourse: [],
       });
     }

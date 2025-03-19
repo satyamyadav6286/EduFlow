@@ -1,6 +1,6 @@
 // API URL configuration
-// Gets the API base URL from environment variables or falls back to the deployed server URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://eduflow-server.onrender.com/api/v1';
+// Gets the API base URL from environment variables or falls back to the localhost URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 // API endpoints
 export const USER_API = `${API_BASE_URL}/user`;
