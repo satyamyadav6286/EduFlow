@@ -1,193 +1,96 @@
-# EduFlow - Online Learning Platform
+# EduFlow - Learning Management System
 
-<div align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0">
-  <img src="https://img.shields.io/badge/license-MIT-success?style=for-the-badge" alt="License MIT">
-  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
-</div>
+EduFlow is a comprehensive Learning Management System designed for creating, managing, and delivering online courses. It features both instructor and student interfaces with robust functionality for course management and consumption.
 
-<div align="center">
-  <img src="https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React">
-  <img src="https://img.shields.io/badge/Node.js-18.x-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
-  <img src="https://img.shields.io/badge/MongoDB-6.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
-  <img src="https://img.shields.io/badge/Vite-4.x-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
-</div>
+## Features
 
-## 📋 Overview
+- **Instructor Dashboard** - Create and manage courses, track sales and revenue
+- **Student Portal** - Enroll in courses, track progress, and earn certificates
+- **Course Creation** - Easily upload videos, create lectures, and organize content
+- **Payment Processing** - Secure integration with Razorpay
+- **Media Storage** - Cloud storage for course videos and thumbnails
+- **Responsive Design** - Works on desktop, tablet, and mobile
 
-EduFlow is a comprehensive online learning platform that enables instructors to create and publish engaging courses while providing students with a seamless learning experience. The platform features secure payment processing, interactive video content, progress tracking, and certificate generation.
+## Technology Stack
 
-## ✨ Features
+- **Frontend**: React, Tailwind CSS, Redux Toolkit
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB
+- **Authentication**: JWT
+- **Media Storage**: Cloudinary
+- **Payment Processing**: Razorpay
 
-- **🔐 User Authentication** - Secure signup and login for both students and instructors
-- **📚 Course Management** - Create, edit, and publish courses with rich content
-- **💳 Payment Integration** - Seamless Razorpay payment gateway for course purchases
-- **🎬 Content Delivery** - Stream video lectures and access course materials
-- **📊 Progress Tracking** - Monitor student progress through interactive dashboards
-- **🏆 Certificate Generation** - Automated certificate issuance upon course completion
-- **📱 Responsive Design** - Optimized for all devices from mobile to desktop
-- **🔍 Search & Filter** - Advanced search functionality with multiple filtering options
-- **⭐ Rating System** - Course rating and review system for quality feedback
-- **📢 Announcements** - Course-specific announcements and updates
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React.js** - UI library for building interactive interfaces
-- **Redux Toolkit** - State management
-- **RTK Query** - Data fetching and caching
-- **TailwindCSS** - Utility-first CSS framework
-- **Vite** - Next-generation frontend tooling
-
-### Backend
-- **Node.js** - JavaScript runtime environment
-- **Express** - Web application framework
-- **MongoDB** - NoSQL database
-- **JWT** - Authentication mechanism
-- **Mongoose** - MongoDB object modeling
-
-### Third-party Services
-- **Cloudinary** - Media storage and delivery
-- **Razorpay** - Payment processing
-- **PDF Kit** - Certificate generation
-
-## 🚀 Getting Started
+## Installation
 
 ### Prerequisites
 
-- Node.js (v14 or later)
-- MongoDB
+- Node.js (v14 or higher)
+- MongoDB (local or Atlas)
 - Cloudinary account
-- Razorpay account
+- Razorpay account (for payment processing)
 
-### Installation
+### Setup Instructions
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/satyamyadav6286/eduflow.git
+   ```
+   git clone https://github.com/your-username/eduflow.git
    cd eduflow
    ```
 
-2. **Install dependencies**
-   ```bash
-   # Install server dependencies
+2. **Setup environment variables**
+
+   For the server:
+   - Copy `.env.example` to `.env` in the server directory
+   - Fill in your MongoDB URI, JWT secret, Cloudinary and Razorpay credentials
+
+   For the client:
+   - Copy `.env.example` to `.env` in the client directory
+   - Set the API URL (use the default for local development)
+
+3. **Install dependencies**
+
+   For the server:
+   ```
    cd server
    npm install
+   ```
 
-   # Install client dependencies
-   cd ../client
+   For the client:
+   ```
+   cd client
    npm install
    ```
 
-3. **Environment Variables**
-   
-   Create `.env` files in both the client and server directories based on the provided `.env.example` files.
+4. **Start the development servers**
 
-   **Server variables:**
+   Start the server:
    ```
-   PORT=3000
-   MONGO_URI=your_mongodb_connection_string
-   SECRET_KEY=your_jwt_secret_key
-   JWT_SECRET=your_jwt_secret
-
-   # Cloudinary credentials
-   CLOUD_NAME=your_cloudinary_cloud_name
-   API_KEY=your_cloudinary_api_key
-   API_SECRET=your_cloudinary_api_secret
-
-   # Razorpay credentials
-   RAZORPAY_KEY_ID=your_razorpay_key_id
-   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   ```
-
-   **Client variables:**
-   ```
-   VITE_API_URL=http://localhost:3000/api/v1
-   ```
-
-4. **Start the application**
-
-   **Development mode:**
-   ```bash
-   # Start server
    cd server
    npm run dev
+   ```
 
-   # In a separate terminal, start client
+   Start the client (in a new terminal):
+   ```
    cd client
    npm run dev
    ```
 
-   For more detailed instructions, see [HOW_TO_START_APPLICATION.md](HOW_TO_START_APPLICATION.md)
+5. **Access the application**
+   
+   The client will be available at http://localhost:5173
+   The server API will be available at http://localhost:3000/api/v1
 
-## 📊 Application Architecture
+## Security Notes
 
-```
-.
-├── client                  # Frontend React application
-│   ├── public              # Public assets
-│   │   ├── components      # Reusable components
-│   │   ├── features        # Feature-based modules
-│   │   ├── pages           # Application pages
-│   │   ├── app             # Redux store and reducers
-│   │   └── ...
-│   └── ...
-└── server                  # Backend Node.js application
-    ├── controllers         # Route controllers
-    ├── models              # Database models
-    ├── routes              # API routes
-    ├── middlewares         # Express middlewares
-    ├── utils               # Utility functions
-    └── ...
-```
+- Never commit your `.env` files to version control
+- Keep your Razorpay API keys secure
+- The repository includes `.env.example` files as templates, but you need to create your own `.env` files with actual credentials
 
-## 🔒 Security
-
-- All API keys and secrets are stored in environment variables
-- Authentication using JWT tokens
-- Password hashing using bcrypt
-- CORS protection
-- Input validation and sanitization
-- Request rate limiting
-
-## 🌐 API Documentation
-
-The backend API follows RESTful principles and is organized by resource:
-
-- **Auth**: `/api/v1/auth` - User authentication and registration
-- **Courses**: `/api/v1/course` - Course CRUD operations
-- **Lectures**: `/api/v1/course/:courseId/lecture` - Lecture management
-- **Purchases**: `/api/v1/purchase` - Course purchase and payment processing
-- **Certificates**: `/api/v1/certificate` - Certificate generation and verification
-
-## 💡 Future Enhancements
-
-- Live webinar functionality
-- Discussion forums
-- Student community features
-- Mobile application
-- Advanced analytics dashboard
-- AI-powered content recommendations
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgements
+## Acknowledgments
 
-- [React.js](https://reactjs.org/) - UI library
-- [Node.js](https://nodejs.org/) - JavaScript runtime
-- [MongoDB](https://www.mongodb.com/) - NoSQL database
-- [Cloudinary](https://cloudinary.com/) - Media management
-- [Razorpay](https://razorpay.com/) - Payment gateway
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework 
+- Built by Satyam Govind Yadav
+- Special thanks to all contributors 

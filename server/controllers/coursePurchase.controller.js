@@ -199,3 +199,48 @@ export const getAllPurchasedCourse = async (req, res) => {
     });
   }
 };
+
+export const getInstructorPurchases = async (req, res) => {
+  try {
+    const instructorId = req.id; // Get instructor ID from auth middleware
+
+    // First, get all courses created by this instructor
+    const instructorCourses = await Course.find({ creator: instructorId });
+    
+    if (!instructorCourses || instructorCourses.length === 0) {
+      return res.status(200).json({
+        purchasedCourse: [],
+        message: "No courses found for this instructor"
+      });
+    }
+
+    // Get the IDs of all instructor courses
+    const courseIds = instructorCourses.map(course => course._id);
+
+    // Find all purchases for these courses
+    const purchasedCourses = await CoursePurchase.find({
+      courseId: { $in: courseIds },
+      status: "completed"
+    }).populate({
+      path: "courseId",
+      select: "courseTitle subTitle coursePrice courseThumbnail category creator",
+      populate: {
+        path: "creator",
+        select: "name"
+      }
+    }).populate({
+      path: "userId",
+      select: "name email"
+    });
+    
+    return res.status(200).json({
+      purchasedCourse: purchasedCourses,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ 
+      success: false,
+      message: "Failed to get instructor course purchases" 
+    });
+  }
+};

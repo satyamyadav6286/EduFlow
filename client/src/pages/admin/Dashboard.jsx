@@ -1,13 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGetPurchasedCoursesQuery } from "@/features/api/purchaseApi";
+import { useGetInstructorSalesQuery } from "@/features/api/purchaseApi";
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const Dashboard = () => {
-  const {data, isSuccess, isError, isLoading} = useGetPurchasedCoursesQuery();
+  const {data, isSuccess, isError, isLoading} = useGetInstructorSalesQuery();
 
   if(isLoading) return <h1>Loading...</h1>
-  if(isError) return <h1 className="text-red-500">Failed to get purchased course</h1>
+  if(isError) return <h1 className="text-red-500">Failed to get sales data</h1>
 
   // Add safe handling for missing data
   const purchasedCourse = data?.purchasedCourse || [];
@@ -18,7 +18,7 @@ const Dashboard = () => {
     price: course?.courseId?.coursePrice || 0
   }));
 
-  const totalRevenue = purchasedCourse.reduce((acc, element) => 
+  const totalRevenue = purchasedCourse.reduce((acc, element) =>
     acc + (element?.amount || 0), 0);
 
   const totalSales = purchasedCourse.length;
@@ -69,12 +69,13 @@ const Dashboard = () => {
                   dataKey="price"
                   stroke="#4a90e2" // Changed color to a different shade of blue
                   strokeWidth={3}
-                  dot={{ stroke: "#4a90e2", strokeWidth: 2 }} // Same color for the dot
+                  dot={{ stroke: '#4a90e2', strokeWidth: 3, r: 6 }}
+                  activeDot={{ stroke: '#2a6ac0', strokeWidth: 2, r: 8 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center py-10 text-gray-500">No course data available</p>
+            <p className="text-center text-gray-500">No course data available</p>
           )}
         </CardContent>
       </Card>
