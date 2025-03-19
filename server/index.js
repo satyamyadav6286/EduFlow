@@ -10,7 +10,6 @@ import purchaseRoute from "./routes/purchaseCourse.route.js";
 import courseProgressRoute from "./routes/courseProgress.route.js";
 import contactRoute from "./routes/contact.route.js";
 import certificateRoute from "./routes/certificate.route.js";
-import seedRoute from "./routes/seed.route.js";
 
 dotenv.config({});
 
@@ -40,7 +39,6 @@ app.use("/api/v1/purchase", purchaseRoute);
 app.use("/api/v1/progress", courseProgressRoute);
 app.use("/api/v1/contact", contactRoute);
 app.use("/api/v1/certificates", certificateRoute);
-app.use("/api/v1/seed", seedRoute);
  
 // Error handling middleware
 app.use((err, req, res, next) => {
