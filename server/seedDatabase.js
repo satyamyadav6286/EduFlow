@@ -11,6 +11,12 @@ dotenv.config();
 // Sample users data
 const sampleUsers = [
   {
+    name: 'Satyam Govind Yadav',
+    email: 'satyamyadav6286@gmail.com',
+    password: 'satyam@6286',
+    role: 'instructor'
+  },
+  {
     name: 'Mohit Pardeshi',
     email: 'mohit.pardeshi@example.com',
     password: 'Password123!',
@@ -216,7 +222,7 @@ const main = async () => {
     const createCourses = async () => {
       try {
         // Find instructor user to associate with courses
-        const instructor = await User.findOne({ email: 'instructor@eduflow.com' });
+        const instructor = await User.findOne({ email: 'satyamyadav6286@gmail.com' });
         if (!instructor) {
           console.error('Instructor user not found, cannot create courses');
           return;
