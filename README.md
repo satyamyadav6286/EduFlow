@@ -1,4 +1,4 @@
-# EduFlow Learning Management System
+# EduFlow - Learning Management System
 
 <div align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0">
