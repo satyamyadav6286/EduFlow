@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const CERTIFICATE_API = "http://localhost:3000/api/v1/certificates";
+import { CERTIFICATE_API } from "../../config/apiConfig";
 
 export const certificateApi = createApi({
   reducerPath: "certificateApi",

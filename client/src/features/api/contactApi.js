@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const CONTACT_API = "http://localhost:3000/api/v1/contact";
+import { CONTACT_API } from "../../config/apiConfig";
 
 export const contactApi = createApi({
   reducerPath: "contactApi",

@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const MEDIA_API = "http://localhost:3000/api/v1/media";
+import { MEDIA_API } from "../../config/apiConfig";
 
 export const mediaApi = createApi({
   reducerPath: "mediaApi",
