@@ -53,8 +53,8 @@ If you see an error like "Error: listen EADDRINUSE: address already in use :::30
 ### Package.json Not Found
 
 If you see errors about not finding package.json, make sure you're in the correct directory:
-- For client: `C:\Users\satya\OneDrive\Desktop\lms_patelmernstack\client`
-- For server: `C:\Users\satya\OneDrive\Desktop\lms_patelmernstack\server`
+- For client: `C:\Users\satya\OneDrive\Desktop\EduFlow\client`
+- For server: `C:\Users\satya\OneDrive\Desktop\EduFlow\server`
 
 ## Additional Resources
 
