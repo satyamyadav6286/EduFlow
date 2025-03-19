@@ -1,0 +1,15 @@
+EduFlow Learning Platform Logo
+
+Description:
+- Blue gradient square with rounded corners (background element)
+- Diamond shape in pink/red gradient overlaid on the square (graphic element)
+- "EduFlow" text in dark gray, bold font
+- "Learning Platform" text in lighter gray, smaller font
+
+Colors:
+- Blue gradient: #0077cc to #00aaff
+- Red gradient: #ff6b6b to #ff3366
+- Dark text: #2c3e50
+- Light text: #7f8c8d
+
+This logo represents the EduFlow online learning platform, with the diamond shape symbolizing growth and knowledge. 

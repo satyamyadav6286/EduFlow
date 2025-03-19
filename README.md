@@ -17,7 +17,9 @@
 
 EduFlow is a comprehensive online learning platform that enables instructors to create and publish engaging courses while providing students with a seamless learning experience. The platform features secure payment processing, interactive video content, progress tracking, and certificate generation.
 
-![EduFlow Platform](https://via.placeholder.com/800x400?text=EduFlow+Platform)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/logo.svg" alt="EduFlow Platform" width="400">
+</div>
 
 ## ✨ Features
 
