@@ -7,14 +7,14 @@
 </div>
 
 <div align="center">
+  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/new-logo.svg" alt="EduFlow Platform" width="250">
+</div>
+
+<div align="center">
   <img src="https://img.shields.io/badge/React-18.x-61DAFB.svg?logo=react&logoColor=white" alt="React">
   <img src="https://img.shields.io/badge/Node.js-18.x-339933.svg?logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/MongoDB-6.0-47A248.svg?logo=mongodb&logoColor=white" alt="MongoDB">
   <img src="https://img.shields.io/badge/Vite-4.x-646CFF.svg?logo=vite&logoColor=white" alt="Vite">
-</div>
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/new-logo.svg" alt="EduFlow Platform" width="300">
 </div>
 
 ## 📋 Overview

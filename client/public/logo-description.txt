@@ -1,0 +1,12 @@
+EduFlow Logo Description
+
+The EduFlow logo consists of:
+
+1. A dark background (#111827)
+2. A grid of 9 white dots arranged in a 3x3 pattern on the left side
+3. Text "Edu" in white and "Flow" in pink (#ff3366)
+4. Clean, modern typography with a bold sans-serif font
+
+The dots represent structure and organization in education, while the two-tone text illustrates the flow of knowledge from traditional education (white) to modern, dynamic learning approaches (pink).
+
+The logo's clean design works well in both light and dark environments and scales appropriately for various display contexts. 
