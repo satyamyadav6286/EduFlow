@@ -156,7 +156,7 @@ router.route('/run-db-seed').get(async (req, res) => {
       courses: []
     };
 
-    // Create Admin User
+    // Create Admin User (but using an 'instructor' role since 'admin' is not valid)
     const adminExists = await User.findOne({ email: 'admin@eduflow.com' });
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash('Admin@123', 10);
@@ -164,7 +164,7 @@ router.route('/run-db-seed').get(async (req, res) => {
         name: 'Admin User',
         email: 'admin@eduflow.com',
         password: hashedPassword,
-        role: 'admin'
+        role: 'instructor'
       });
       results.admin.push(admin.email);
       console.log('Admin user created:', admin.email);
