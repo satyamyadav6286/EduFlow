@@ -1,7 +1,7 @@
 # EduFlow - Online Learning Platform
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/new-logo.svg" alt="EduFlow Platform" width="300">
+  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/logo-simple.svg" alt="EduFlow Platform" width="300">
 </div>
 
 <div align="center">

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40" viewBox="0 0 150 40">
+  <!-- Building icon -->
+  <path d="M5,30 V10 H15 V30 H5 Z" fill="#000000" />
+  <path d="M10,5 L25,10 V30 H15 V10 L10,10 Z" fill="#000000" />
+  <path d="M25,30 V10 L35,15 V30 H25 Z" fill="#000000" />
+  
+  <!-- Windows -->
+  <rect x="8" y="13" width="4" height="2" fill="white" />
+  <rect x="8" y="18" width="4" height="2" fill="white" />
+  <rect x="8" y="23" width="4" height="2" fill="white" />
+  
+  <rect x="18" y="13" width="4" height="2" fill="white" />
+  <rect x="18" y="18" width="4" height="2" fill="white" />
+  <rect x="18" y="23" width="4" height="2" fill="white" />
+  
+  <rect x="28" y="18" width="4" height="2" fill="white" />
+  <rect x="28" y="23" width="4" height="2" fill="white" />
+  
+  <!-- EduFlow text -->
+  <text x="45" y="25" font-family="Arial, sans-serif" font-size="20" font-weight="bold">
+    <tspan fill="#000000">Edu</tspan><tspan fill="#ff3366">Flow</tspan>
+  </text>
+</svg> 
