@@ -1,10 +1,6 @@
 # EduFlow - Online Learning Platform
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/satyamyadav6286/EduFlow/main/client/public/logo-simple.svg" alt="EduFlow Platform" width="300">
-</div>
-
-<div align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0">
   <img src="https://img.shields.io/badge/license-MIT-success?style=for-the-badge" alt="License MIT">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
