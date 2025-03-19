@@ -175,9 +175,9 @@ export const getAllPurchasedCourse = async (req, res) => {
       status: "completed",
     }).populate({
       path: "courseId",
-      select: "courseTitle subTitle coursePrice thumbnail category instructor",
+      select: "courseTitle subTitle coursePrice courseThumbnail category creator",
       populate: {
-        path: "instructor",
+        path: "creator",
         select: "name"
       }
     });
