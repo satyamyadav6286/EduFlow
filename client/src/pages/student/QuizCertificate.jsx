@@ -91,7 +91,7 @@ const QuizScorecard = () => {
       .then(() => toast.success('Quiz results link copied to clipboard'))
       .catch(() => toast.error('Failed to copy link'));
   };
-  
+
   const handleShareToLinkedIn = () => {
     if (!latestSubmission?.id) {
       toast.error('Quiz attempt not found');
@@ -197,8 +197,8 @@ const QuizScorecard = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600 dark:text-gray-400">Score</span>
                 <span className="font-bold text-lg">{Math.round(currentScore)}%</span>
-              </div>
-              <Progress 
+                </div>
+                <Progress 
                 value={currentScore} 
                 className={`h-3 ${
                   currentScore >= 80 
@@ -211,7 +211,7 @@ const QuizScorecard = () => {
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
                 Pass Threshold: {passingScore}%
               </div>
-            </div>
+                </div>
             
             {/* Quiz Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -223,8 +223,8 @@ const QuizScorecard = () => {
               <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Attempt Date</div>
                 <div className="font-medium">{submissionDate.toLocaleDateString()}</div>
-              </div>
-              
+          </div>
+        
               <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded">
                 <div className="text-sm text-gray-500 dark:text-gray-400">Best Score</div>
                 <div className="font-medium">{Math.round(bestScore)}%</div>
@@ -270,7 +270,7 @@ const QuizScorecard = () => {
                         {submission.isPassed && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
                       </div>
                     </div>
-                    <Button 
+                <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
@@ -281,7 +281,7 @@ const QuizScorecard = () => {
                       }}
                     >
                       <Download className="h-4 w-4" />
-                    </Button>
+                </Button>
                   </div>
                 ))}
                 {submissions.length > 4 && (
@@ -293,7 +293,7 @@ const QuizScorecard = () => {
             </div>
           )}
           
-          {/* Share section */}
+            {/* Share section */}
           <div className="space-y-4 mt-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
               <h3 className="font-medium mb-3 flex items-center gap-2">
