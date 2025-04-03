@@ -1,7 +1,7 @@
-# EduFlow - Learning Management System
+# EduFlow - Modern Learning Management System
 
 <div align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge" alt="Version 1.1.0">
   <img src="https://img.shields.io/badge/license-MIT-success?style=for-the-badge" alt="License MIT">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
 </div>
@@ -13,96 +13,107 @@
   <img src="https://img.shields.io/badge/Tailwind-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
 </div>
 
-EduFlow is a comprehensive Learning Management System designed for creating, managing, and delivering online courses. With dedicated interfaces for both instructors and students, it provides robust functionality for course management, content delivery, payment processing, and learning analytics.
+<div align="center">
+  <p><strong>Transform education with our powerful, intuitive learning platform.</strong></p>
+  <p>Built with modern web technologies to deliver seamless learning experiences.</p>
+</div>
+
+---
+
+## 🚀 About EduFlow
+
+EduFlow is a comprehensive Learning Management System designed for creating, managing, and delivering online courses. With dedicated interfaces for both instructors and students, it provides robust functionality for course management, content delivery, payment processing, interactive quizzes, certificate generation, and learning analytics.
 
 ## 📋 Table of Contents
 
-- [Features](#-features)
+- [Key Features](#-key-features)
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
-- [Installation Guide](#-installation-guide)
-- [Usage Instructions](#-usage-instructions)
+- [Quick Start](#-quick-start)
+- [Usage Guide](#-usage-guide)
 - [API Reference](#-api-reference)
-- [Security Measures](#-security-measures)
+- [Security Features](#-security-features)
 - [Future Roadmap](#-future-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
 
-## ✨ Features
+## ✨ Key Features
 
 ### For Instructors
-- **Comprehensive Dashboard** - Monitor sales, revenue, and student engagement metrics
-- **Course Studio** - Create and manage courses with drag-and-drop content organization
-- **Rich Media Support** - Upload videos, documents, and presentations with cloud storage
-- **Student Management** - View enrolled students and their progress statistics
-- **Sales Analytics** - Track revenue per course, conversion rates, and growth trends
+
+- **Intuitive Dashboard** - Real-time analytics for course performance and revenue
+- **Course Builder** - Drag-and-drop interface for content organization
+- **Quiz Creator** - Build assessments with various question types
+- **Student Management** - Track progress, engagement, and completion rates
+- **Revenue Analytics** - Comprehensive sales and conversion metrics
 
 ### For Students
-- **Course Marketplace** - Browse, search, and filter courses by category, price, and level
-- **Learning Interface** - Intuitive video player with note-taking and bookmarking capabilities
-- **Progress Tracking** - Visual indicators of course completion and achievement milestones
-- **Certificate Generation** - Automatic certificate issuance upon course completion
-- **Responsive Design** - Seamless experience across desktop, tablet, and mobile devices
 
-### Platform Features
-- **Secure Payments** - PCI-compliant payment processing with Razorpay integration
-- **Cloud Storage** - Efficient media delivery with Cloudinary CDN integration
-- **Authentication** - JWT-based secure user authentication and authorization
-- **Search & Filters** - Advanced search with multiple filtering options for course discovery
-- **Responsive UI** - Fully responsive design built with TailwindCSS
+- **Engaging Interface** - Distraction-free learning environment
+- **Interactive Quizzes** - Test knowledge with dynamic assessments
+- **Progress Tracking** - Visual completion indicators and achievements
+- **Verified Certificates** - Downloadable, verifiable course certificates
+- **Quiz Scorecards** - Detailed performance metrics and downloadable results
+- **Multi-device Access** - Seamless experience across all devices
+
+### Platform Highlights
+
+- **Certificate Verification System** - Public verification portal for certificates and quiz scorecards
+- **Secure Downloads** - Token-independent document retrieval
+- **Responsive Design** - Optimized for mobile, tablet, and desktop
+- **Payment Integration** - Secure checkout with Razorpay
+- **Cloud Media Delivery** - Fast content streaming with Cloudinary CDN
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React** - Component-based UI library
-- **Redux Toolkit** - State management with RTK Query for data fetching
-- **TailwindCSS** - Utility-first CSS framework
-- **Vite** - Next-generation frontend tooling
-- **React Router** - Declarative routing for React
+- **React 18** - Component-based UI development
+- **Redux Toolkit** - State management with RTK Query
+- **TailwindCSS** - Utility-first styling
+- **shadcn/ui** - Accessible component library
+- **Vite** - Next-generation build tooling
 
 ### Backend
-- **Node.js** - JavaScript runtime environment
-- **Express** - Web application framework
+- **Node.js** - JavaScript runtime
+- **Express** - Web framework
 - **MongoDB** - NoSQL database
-- **Mongoose** - Elegant MongoDB object modeling
-- **JWT** - JSON Web Tokens for authentication
+- **Mongoose** - ODM for MongoDB
+- **JWT** - Authentication and authorization
+- **PDFKit** - Certificate and scorecard generation
 
-### Third-party Services
-- **Cloudinary** - Cloud-based image and video management
-- **Razorpay** - Payment gateway integration
-- **MongoDB Atlas** - Cloud database service
+### Infrastructure
+- **Cloudinary** - Media management
+- **Razorpay** - Payment processing
+- **MongoDB Atlas** - Database hosting
 
 ## 🏗️ Project Structure
 
 ```
 .
-├── client/                 # Frontend React application
-│   ├── public/             # Static assets
+├── client/                 # Frontend application
+│   ├── src/
 │   │   ├── components/     # Reusable UI components
-│   │   ├── features/       # Feature-based modules and API slices
-│   │   ├── pages/          # Page components
-│   │   ├── styles/         # Global styles
-│   │   └── app/            # Redux store configuration
+│   │   ├── features/       # Feature modules and API slices
+│   │   ├── pages/          # Application pages
+│   │   └── app/            # Store configuration
 │   └── ...
-└── server/                 # Backend Node.js application
+└── server/                 # Backend application
     ├── controllers/        # Request handlers
-    ├── models/             # Database models
-    ├── routes/             # API routes
+    ├── models/             # Database schemas
+    ├── routes/             # API endpoints
     ├── middlewares/        # Express middlewares
-    ├── utils/              # Utility functions
-    ├── uploads/            # File upload directory
-    └── certificates/       # Generated certificates
+    ├── utils/              # Helper functions
+    └── ...
 ```
 
-## 🚀 Installation Guide
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
+- Node.js (v14+)
 - MongoDB (local or Atlas)
-- Cloudinary account
-- Razorpay account (for payment processing)
+- Git
 
 ### Setup Instructions
 
@@ -112,120 +123,102 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
    cd EduFlow
    ```
 
-2. **Setup environment variables**
-
-   For the server:
-   ```bash
-   cd server
-   cp .env.example .env
-   # Edit .env with your actual credentials
-   ```
-
-   For the client:
-   ```bash
-   cd client
-   cp .env.example .env
-   # Edit .env as needed (default works for local development)
-   ```
-
-3. **Install dependencies**
-
-   For the server:
+2. **Server Setup**
    ```bash
    cd server
    npm install
-   ```
-
-   For the client:
-   ```bash
-   cd client
-   npm install
-   ```
-
-4. **Start the development servers**
-
-   Start the server:
-   ```bash
-   cd server
-   npm run dev
-   ```
-
-   Start the client (in a new terminal):
-   ```bash
-   cd client
-   npm run dev
-   ```
-
-5. **Access the application**
    
-   The client will be available at http://localhost:5173  
-   The server API will be available at http://localhost:3000/api/v1
+   # Create .env file (see .env.example for required variables)
+   # Start development server
+   npm run dev
+   ```
 
-## 💻 Usage Instructions
+3. **Client Setup**
+   ```bash
+   cd client
+   npm install
+   
+   # Start development server
+   npm run dev
+   ```
 
-### Instructor Account
+4. **Access the Application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3000/api/v1
 
-1. Register as an instructor
-2. Create your first course by clicking the "Create Course" button
-3. Add course details, thumbnail, and pricing information
-4. Create sections and lectures with video content
-5. Publish your course when ready
-6. Monitor sales and student engagement from your dashboard
+> 📝 **Note:** PowerShell users should run commands separately since PowerShell doesn't support the '&&' operator for command chaining.
 
-### Student Account
+## 💻 Usage Guide
 
-1. Register as a student
-2. Browse courses in the marketplace
-3. Enroll in courses (free or paid)
-4. Access course content through the learning interface
-5. Track your progress and complete courses
-6. Download certificates upon course completion
+### For Instructors
+
+1. **Create Courses**
+   - Design curriculum with sections and lectures
+   - Upload videos and learning materials
+   - Create interactive quizzes and assessments
+   - Set pricing and publish to the marketplace
+
+2. **Monitor Performance**
+   - Track enrollment metrics
+   - Review student progress and quiz scores
+   - Analyze revenue and conversion rates
+
+### For Students
+
+1. **Learn Effectively**
+   - Browse and enroll in courses
+   - Access structured learning content
+   - Take quizzes to test knowledge
+   - Download certificates and scorecards upon completion
+
+2. **Track Your Progress**
+   - Monitor completion percentage
+   - Review quiz performance
+   - Earn and share verified achievements
 
 ## 📚 API Reference
 
-The backend API follows RESTful principles and is organized by resource:
+Our RESTful API is organized by resource:
 
 | Endpoint | Description |
 |----------|-------------|
-| `/api/v1/user` | User authentication and profile management |
+| `/api/v1/auth` | Authentication and user management |
 | `/api/v1/course` | Course creation and management |
-| `/api/v1/purchase` | Course enrollment and payment processing |
-| `/api/v1/media` | Media upload and management |
-| `/api/v1/progress` | Course progress tracking |
-| `/api/v1/contact` | Contact form submissions |
-| `/api/v1/certificates` | Certificate generation and verification |
+| `/api/v1/lecture` | Lecture content and organization |
+| `/api/v1/quiz` | Quiz creation and submission |
+| `/api/v1/purchase` | Enrollment and payment processing |
+| `/api/v1/certificate` | Certificate generation and verification |
+| `/api/v1/progress` | Learning progress tracking |
 
-## 🔒 Security Measures
+## 🔒 Security Features
 
-- Environment variables for sensitive information
-- JWT authentication with secure HTTP-only cookies
-- Password hashing with bcrypt
-- CORS protection and request rate limiting
-- Input validation and sanitization
-- Secure file uploads with validation
-
-> **Important Note**: Never commit your `.env` files to version control. The repository includes `.env.example` files as templates, but you must create your own `.env` files with actual credentials.
+- **JWT Authentication** - Secure, token-based authentication
+- **Password Encryption** - Bcrypt hashing for sensitive data
+- **CORS Protection** - Configured security headers
+- **Input Validation** - Request validation and sanitization
+- **Rate Limiting** - Protection against brute force attacks
+- **Public Document Verification** - Secure certificate validation system
 
 ## 🔮 Future Roadmap
 
-- Live webinar functionality
-- Discussion forums and community features
-- Mobile application development
-- Advanced analytics dashboard
-- AI-powered content recommendations
-- Internationalization and localization
+- **Live Sessions** - Real-time virtual classrooms
+- **Community Forums** - Discussion boards for each course
+- **AI Learning Assistant** - Personalized learning recommendations
+- **Mobile Applications** - Native iOS and Android apps
+- **Advanced Analytics** - Detailed learning behavior insights
+- **Multi-language Support** - Internationalization capabilities
 
 ## 👥 Contributing
 
 We welcome contributions to EduFlow! Please follow these steps:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and commit (`git commit -m 'Add amazing feature'`)
+4. Push to your branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-For major changes, please open an issue first to discuss what you would like to change.
+For major changes, please open an issue first to discuss proposed changes.
 
 ## 📄 License
 
@@ -234,5 +227,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Developed by [Satyam Govind Yadav](https://github.com/satyamyadav6286)
-- Special thanks to all contributors and testers
-- Built with open-source technologies and communities 
+- Special thanks to all contributors
+- Built with open-source technologies

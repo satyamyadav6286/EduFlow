@@ -1,6 +1,6 @@
 # How to Start the Application
 
-This guide provides instructions for starting both the client and server components of the application using PowerShell.
+This guide provides instructions for starting both the client and server components of the EduFlow application using PowerShell.
 
 ## Starting the Server
 
