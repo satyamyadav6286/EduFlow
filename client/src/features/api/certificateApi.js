@@ -6,6 +6,13 @@ export const certificateApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: CERTIFICATE_API,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     generateCertificate: builder.mutation({
@@ -25,6 +32,20 @@ export const certificateApi = createApi({
       },
     }),
     
+    getCertificate: builder.query({
+      query: (courseId) => ({
+        url: `/${courseId}`,
+        method: "GET",
+      }),
+      transformErrorResponse: (response) => {
+        console.error("Certificate get error:", response);
+        return {
+          status: response.status,
+          message: response.data?.message || "Failed to get certificate",
+        };
+      },
+    }),
+    
     verifyCertificate: builder.query({
       query: (certificateId) => ({
         url: `/${certificateId}/verify`,
@@ -38,6 +59,14 @@ export const certificateApi = createApi({
         return {
           url: `/${certificateId}/download`,
           method: "GET",
+          responseHandler: (response) => response.blob(),
+        };
+      },
+      transformErrorResponse: (response) => {
+        console.error("Certificate download error:", response);
+        return {
+          status: response.status,
+          message: response.data?.message || "Failed to download certificate",
         };
       },
     }),
@@ -46,6 +75,7 @@ export const certificateApi = createApi({
 
 export const { 
   useGenerateCertificateMutation,
+  useGetCertificateQuery,
   useVerifyCertificateQuery,
   useDownloadCertificateMutation
 } = certificateApi; 

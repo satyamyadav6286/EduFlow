@@ -54,6 +54,47 @@ export const quizApi = createApi({
         method: "GET"
       }),
       providesTags: ["QuizResults"]
+    }),
+    
+    // Quiz results PDF endpoints
+    generateQuizResultsPDF: builder.mutation({
+      query: (courseId) => ({
+        url: `/results-pdf/${courseId}`,
+        method: "GET"
+      })
+    }),
+    
+    downloadQuizResultsPDF: builder.query({
+      query: (filename) => ({
+        url: `/download-results/${filename}`,
+        method: "GET",
+        responseHandler: (response) => response.blob()
+      })
+    }),
+
+    // New endpoint for verification
+    getQuizCertificateDetails: builder.query({
+      query: (certificateId) => ({
+        url: `/certificate/${certificateId}`,
+        method: "GET"
+      })
+    }),
+    
+    // New endpoint for downloading scorecard without authentication
+    downloadScorecard: builder.query({
+      query: (resultId) => ({
+        url: `/scorecard/${resultId}/download`,
+        method: "GET",
+        responseHandler: (response) => response.blob()
+      })
+    }),
+
+    // New endpoint for verifying a scorecard
+    verifyScorecard: builder.query({
+      query: (scorecardId) => ({
+        url: `/scorecard/${scorecardId}/verify`,
+        method: "GET"
+      })
     })
   })
 });
@@ -63,5 +104,10 @@ export const {
   useUpdateQuizMutation,
   useGetQuizByCourseQuery,
   useSubmitQuizAttemptMutation,
-  useGetQuizResultsQuery
+  useGetQuizResultsQuery,
+  useGenerateQuizResultsPDFMutation,
+  useDownloadQuizResultsPDFQuery,
+  useGetQuizCertificateDetailsQuery,
+  useDownloadScorecardQuery,
+  useVerifyScorecardQuery
 } = quizApi; 

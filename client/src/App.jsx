@@ -8,6 +8,8 @@ import MyLearning from "./pages/student/MyLearning";
 import Profile from "./pages/student/Profile";
 import Bookmarks from "./pages/student/Bookmarks";
 import Certificate from "./pages/student/Certificate";
+import QuizCertificate from "./pages/student/QuizCertificate";
+import VerifyQuizCertificate from "./pages/student/VerifyQuizCertificate";
 import Sidebar from "./pages/admin/Sidebar";
 import Dashboard from "./pages/admin/Dashboard";
 import CourseTable from "./pages/admin/course/CourseTable";
@@ -33,6 +35,7 @@ import {
 import PurchaseCourseProtectedRoute from "./components/PurchaseCourseProtectedRoute";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ErrorBoundary, NotFound } from "./components/ErrorBoundary";
+import QuizScorecard from "./pages/student/QuizCertificate";
 
 const appRouter = createBrowserRouter([
   {
@@ -115,12 +118,28 @@ const appRouter = createBrowserRouter([
         element: <VerifyCertificate />,
       },
       {
+        path: "verify",
+        element: <VerifyCertificate />,
+      },
+      {
         path: "certificate",
         element: (
           <ProtectedRoute>
             <Certificate />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "quiz-certificate",
+        element: (
+          <ProtectedRoute>
+            <QuizScorecard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "verify-quiz/:certificateId",
+        element: <VerifyQuizCertificate />,
       },
 
       // admin routes start from here

@@ -54,6 +54,7 @@ app.use("/api/v1/progress", courseProgressRoute);
 app.use("/api/v1/contact", contactRoute);
 app.use("/api/v1/certificates", certificateRoute);
 app.use("/api/v1/quiz", quizRoute);
+app.use("/api/v1/quizzes", quizRoute);
  
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,146 +1,183 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useGenerateCertificateMutation, useDownloadCertificateMutation } from '@/features/api/certificateApi';
+import { useGenerateCertificateMutation, useGetCertificateQuery } from '@/features/api/certificateApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Share2, Award, Copy, ExternalLink, Printer } from 'lucide-react';
+import { Download, Share2, Award, Copy, ExternalLink, Printer, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSelector } from 'react-redux';
+import { serverBaseUrl } from '@/config/constants';
+import { getBestToken, refreshToken } from '@/middlewares/tokenValidator';
 
 const Certificate = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useSelector(state => state.auth);
-  const [certificate, setCertificate] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfLoaded, setPdfLoaded] = useState(false);
-  
-  // Get courseId from query params
   const searchParams = new URLSearchParams(location.search);
   const courseId = searchParams.get('courseId');
+  const user = useSelector((state) => state.auth.user);
   
-  // API hooks
-  const [generateCertificate, { isLoading: isGeneratingCertificate }] = useGenerateCertificateMutation();
-  const [downloadCertificate, { isLoading: isDownloading }] = useDownloadCertificateMutation();
+  const [isDownloading, setIsDownloading] = useState(false);
   
-  // Generate certificate on component mount if courseId is provided
+  // Get certificate data, or generate if it doesn't exist
+  const [generateCertificate, { isLoading: isGenerating }] = useGenerateCertificateMutation();
+  const { 
+    data: certificateData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useGetCertificateQuery(courseId, { skip: !courseId });
+  
+  const certificate = certificateData?.data;
+  
+  // Try to generate certificate if not found
   useEffect(() => {
-    if (courseId && !certificate && !isGenerating) {
+    if (error && !isGenerating && courseId) {
+      console.log("Certificate not found, attempting to generate");
       handleGenerateCertificate();
     }
-  }, [courseId, certificate]);
+  }, [error, courseId]);
   
+  // Function to generate certificate with better error handling
   const handleGenerateCertificate = async () => {
-    if (!courseId) {
-      toast.error('Course ID is required to generate a certificate');
-      navigate('/my-learning');
+    try {
+      toast.info("Generating certificate...");
+      const response = await generateCertificate(courseId).unwrap();
+      
+      if (response.success) {
+        toast.success("Certificate generated successfully!");
+        // Reload certificate data after generating
+        refetch();
+      } else {
+        throw new Error(response.message || "Failed to generate certificate");
+      }
+    } catch (error) {
+      console.error("Certificate generation error:", error);
+      toast.error(error.data?.message || error.message || "Failed to generate certificate");
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!certificate?.id) {
+      toast.error('Certificate not found');
       return;
     }
     
-    setIsGenerating(true);
-    
-    try {
-      const response = await generateCertificate(courseId).unwrap();
-      setCertificate(response.certificate);
-      toast.success('Certificate generated successfully!');
-    } catch (error) {
-      toast.error(error.data?.message || 'Failed to generate certificate. Please ensure you have completed the course.');
-      navigate(`/course-progress/${courseId}`);
-    } finally {
-      setIsGenerating(false);
-    }
+    const url = `${window.location.origin}/verify-certificate/${certificate.id}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toast.success('Certificate link copied to clipboard'))
+      .catch(() => toast.error('Failed to copy link'));
   };
-  
-  const handleDownload = async () => {
+
+  const handleShareToLinkedIn = () => {
+    if (!certificate?.id) {
+      toast.error('Certificate not found');
+      return;
+    }
+
+    // Create LinkedIn share URL
+    const certificateUrl = `${window.location.origin}/verify-certificate/${certificate.id}`;
+    const title = `${certificate.course} - Course Completion Certificate`;
+    const summary = `I've successfully completed the ${certificate.course} course on EduFlow Learning Platform`;
+    
+    // Construct LinkedIn share URL with parameters
+    const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certificateUrl)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}`;
+    
+    // Open in new window
+    window.open(linkedinShareUrl, '_blank', 'width=600,height=600');
+    toast.success('Opening LinkedIn sharing window');
+  };
+
+  // Simple direct download function that doesn't require authentication
+  const handleDownload = () => {
     if (!certificate?.id) {
       toast.error('Certificate not found');
       return;
     }
     
     try {
-      const response = await downloadCertificate(certificate.id).unwrap();
+      setIsDownloading(true);
+      console.log("Starting certificate download...");
+      toast.info("Preparing certificate...");
       
-      // Create a blob URL and trigger download
-      const blob = new Blob([response], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `EduFlow_Certificate_${certificate.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Generate a unique ID for this download to prevent caching
+      const timestamp = Date.now();
+      const uniqueId = Math.random().toString(36).substring(2, 10);
       
-      toast.success('Certificate downloaded successfully!');
+      // Create the download URL
+      const downloadUrl = `${serverBaseUrl}/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`;
+      
+      // Create a hidden iframe for download
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = downloadUrl;
+      document.body.appendChild(iframe);
+      
+      // Also open in a new tab as backup
+      window.open(downloadUrl, '_blank');
+      
+      // Clean up the iframe after a delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        setIsDownloading(false);
+        toast.success("Certificate download initiated");
+      }, 1000);
     } catch (error) {
-      toast.error('Failed to download certificate');
+      console.error("Download failed:", error);
+      setIsDownloading(false);
+      toast.error("Download failed. Please try again later.");
     }
   };
   
-  const handlePrint = () => {
-    if (!certificate?.downloadUrl) {
-      toast.error('Certificate PDF not available');
-      return;
-    }
-    
-    const printWindow = window.open(certificate.downloadUrl, '_blank');
-    if (printWindow) {
-      printWindow.addEventListener('load', () => {
-        printWindow.print();
-      });
-    } else {
-      toast.error('Please allow pop-ups to print the certificate');
-    }
-  };
-  
-  const handleCopyVerificationLink = () => {
-    const verificationUrl = `${window.location.origin}/verify-certificate?id=${certificate.id}`;
-    navigator.clipboard.writeText(verificationUrl)
-      .then(() => toast.success('Verification link copied to clipboard'))
-      .catch(() => toast.error('Failed to copy verification link'));
-  };
-  
-  // Loading state
-  if (isGenerating || isGeneratingCertificate) {
+  // Show loading state
+  if (isLoading || isGenerating) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4">
-        <Card className="border-2 border-blue-100 dark:border-blue-900">
+        <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Generating Your Certificate</CardTitle>
+            <CardTitle>{isGenerating ? "Generating Certificate" : "Loading Certificate"}</CardTitle>
             <CardDescription>
-              Please wait while we prepare your certificate...
+              {isGenerating 
+                ? "Please wait while we generate your certificate..." 
+                : "Please wait while we retrieve your certificate..."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center py-12">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <CardContent className="flex justify-center p-8">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </CardContent>
         </Card>
       </div>
     );
   }
   
-  // No certificate state
-  if (!certificate) {
+  // Show error state for API fetch errors
+  if (error && !certificate) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4">
-        <Card className="border-2 border-red-100 dark:border-red-900">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-red-600">Certificate Not Available</CardTitle>
-            <CardDescription>
-              Unable to generate or find your certificate. Please ensure you have completed the course requirements.
+        <Card className="border-red-200">
+          <CardHeader className="text-center bg-red-50">
+            <CardTitle className="text-red-600">Certificate Not Available</CardTitle>
+            <CardDescription className="text-red-500">
+              {error.data?.message || "Failed to load certificate"}
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => navigate(`/course-progress/${courseId}`)}>
-              Return to Course
-            </Button>
-          </CardFooter>
+          <CardContent className="p-6">
+            <p className="text-center mb-4">
+              You might not have completed all requirements for this course yet.
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button onClick={() => navigate(`/course-progress/${courseId}`)}>
+                Return to Course
+              </Button>
+              <Button variant="secondary" onClick={handleGenerateCertificate} disabled={isGenerating}>
+                {isGenerating ? 'Generating...' : 'Try Again'}
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
   }
   
-  // Certificate found state
   return (
     <div className="container max-w-4xl mx-auto py-12 px-4">
       <Card className="border-2 border-green-100 dark:border-green-900">
@@ -157,95 +194,95 @@ const Certificate = () => {
         </CardHeader>
         
         <CardContent className="py-6">
-          <div className="bg-white dark:bg-gray-800 border rounded-lg overflow-hidden my-6 relative">
-            {certificate.downloadUrl ? (
-              <>
-                {!pdfLoaded && (
-                  <div className="absolute inset-0 flex justify-center items-center bg-gray-50 dark:bg-gray-800">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-                <iframe 
-                  src={`${certificate.downloadUrl}#toolbar=0`}
-                  className="w-full min-h-[500px]" 
-                  title="Certificate Preview"
-                  onLoad={() => setPdfLoaded(true)}
-                />
-              </>
-            ) : (
-              <div className="p-8 text-center">
-                <h3 className="text-xl font-semibold mb-3">Certificate of Completion</h3>
-                <p className="text-lg mb-2">This certifies that</p>
-                <p className="text-2xl font-bold mb-2">{user?.name}</p>
-                <p className="mb-4">has successfully completed the course</p>
-                <p className="text-xl font-bold mb-6">{certificate.course}</p>
-                <div className="flex justify-center mb-4">
-                  <div className="h-px w-32 bg-gray-300 dark:bg-gray-600"></div>
-                </div>
-                <p className="text-sm">Date: {new Date(certificate.completionDate || certificate.issuedDate).toLocaleDateString()}</p>
-                <p className="text-sm mt-2">Certificate ID: {certificate.id}</p>
-              </div>
-            )}
+          {/* Certificate details view (always shown) */}
+          <div className="p-8 text-center border rounded-lg bg-white dark:bg-gray-800">
+            <h3 className="text-xl font-semibold mb-3">Certificate of Completion</h3>
+            <p className="text-lg mb-2">This certifies that</p>
+            <p className="text-2xl font-bold mb-2">{user?.name}</p>
+            <p className="mb-4">has successfully completed the course</p>
+            <p className="text-xl font-bold mb-6">{certificate?.course}</p>
+            <div className="flex justify-center mb-4">
+              <div className="h-px w-32 bg-gray-300 dark:bg-gray-600"></div>
+            </div>
+            <p className="text-sm">Date: {new Date(certificate?.completionDate || certificate?.issuedDate).toLocaleDateString()}</p>
+            <p className="text-sm mt-2">Certificate ID: {certificate?.id}</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="space-y-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Certificate ID</p>
-              <p className="font-medium flex items-center gap-2">
-                {certificate.id}
-                <button 
-                  onClick={handleCopyVerificationLink} 
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-              </p>
+          <div className="space-y-4 mt-6">
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+              <h3 className="font-medium mb-3">Certificate Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Student Name</p>
+                  <p className="font-medium">{user?.name}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Course</p>
+                  <p className="font-medium">{certificate?.course}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Issue Date</p>
+                  <p className="font-medium">{new Date(certificate?.issuedDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Certificate ID</p>
+                  <p className="font-medium">{certificate?.id}</p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Issued On</p>
-              <p className="font-medium">
-                {new Date(certificate.completionDate || certificate.issuedDate).toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <Share2 className="h-4 w-4 text-blue-500" />
+                Share Your Achievement
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                Share your certificate with others or add it to your LinkedIn profile to showcase your new skills.
               </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={handleCopyLink} className="flex items-center gap-1">
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy Link
+                </Button>
+                <Button size="sm" onClick={handleShareToLinkedIn} className="flex items-center gap-1">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Add to LinkedIn
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
         
-        <CardFooter className="flex flex-wrap gap-3 justify-center">
+        <CardFooter className="flex flex-col sm:flex-row gap-3">
           <Button 
             onClick={handleDownload} 
-            disabled={isDownloading} 
-            className="flex items-center gap-2"
+            className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
+            disabled={isDownloading}
           >
-            <Download className="h-4 w-4" />
-            {isDownloading ? 'Downloading...' : 'Download PDF'}
+            {isDownloading ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                Download Certificate
+              </>
+            )}
           </Button>
-          
           <Button 
+            onClick={() => window.open(`${serverBaseUrl}/api/v1/certificates/${certificate.id}/download`, '_blank')} 
             variant="outline" 
-            onClick={handlePrint}
-            className="flex items-center gap-2"
-          >
-            <Printer className="h-4 w-4" />
-            Print Certificate
-          </Button>
-          
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/verify-certificate')}
-            className="flex items-center gap-2"
+            className="flex-1 flex items-center justify-center gap-2"
           >
             <ExternalLink className="h-4 w-4" />
-            Verify Certificate
+            View Certificate
           </Button>
-          
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/course-progress/${courseId}`)}
-            className="flex items-center gap-2"
+          <Button 
+            onClick={() => navigate(`/course-progress/${courseId}`)} 
+            variant="secondary" 
+            className="flex-1"
           >
             Back to Course
           </Button>

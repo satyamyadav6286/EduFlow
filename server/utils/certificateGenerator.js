@@ -31,9 +31,11 @@ export const generateCertificate = async (userId, courseId) => {
       fs.mkdirSync(certificateDir, { recursive: true });
     }
     
-    // Create PDF file path
-    const pdfFileName = `certificate_${certificateId}.pdf`;
+    // Create PDF file path - using original filename pattern to maintain compatibility
+    const pdfFileName = `${certificateId}.pdf`;
     const pdfPath = path.resolve(certificateDir, pdfFileName);
+    
+    console.log(`Creating certificate at path: ${pdfPath}`);
     
     // Create a PDF document
     const doc = new PDFDocument({
@@ -236,6 +238,7 @@ export const generateCertificate = async (userId, courseId) => {
             courseId,
             certificateId,
             issuedDate: date,
+            completionDate: date,
             pdfPath: certificateUrl
           });
           

@@ -15,15 +15,16 @@ import {
   useDownloadCertificateMutation
 } from "@/features/api/certificateApi";
 import { useGetQuizResultsQuery } from "@/features/api/quizApi";
-import { Award, CheckCircle, CheckCircle2, CirclePlay, Download, FileQuestion, Pencil } from "lucide-react";
+import { Award, CheckCircle, CheckCircle2, CirclePlay, Download, FileQuestion, Pencil, FileText } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CourseProgress = () => {
   const params = useParams();
   const courseId = params.courseId;
+  const navigate = useNavigate();
   const { data, isLoading, isError, refetch } =
     useGetCourseProgressQuery(courseId);
 
@@ -113,12 +114,26 @@ const CourseProgress = () => {
   const handleCompleteCourse = async () => {
     // Check if the quiz has been passed
     if (quizResults && !hasPassedQuiz) {
-      toast.error("You need to pass the quiz before completing the course");
+      toast.warning("You need to pass the quiz before completing the course", {
+        description: "Please complete the quiz to proceed.",
+        action: {
+          label: "Go to Quiz",
+          onClick: () => setActiveTab("quiz")
+        }
+      });
       setActiveTab("quiz");
       return;
     }
     
-    await completeCourse(courseId);
+    try {
+      await completeCourse(courseId);
+      // Auto-generate certificate upon course completion
+      if (!courseDetails?.certificate?.id) {
+        handleGenerateCertificate();
+      }
+    } catch (error) {
+      toast.error("Failed to mark course as complete");
+    }
   };
   
   const handleInCompleteCourse = async () => {
@@ -131,18 +146,44 @@ const CourseProgress = () => {
 
   const handleGenerateCertificate = async () => {
     try {
+      // Check if the quiz has been passed
+      if (quizResults && !hasPassedQuiz) {
+        toast.warning("You need to pass the quiz before generating a certificate", {
+          description: "Please complete the quiz to proceed.",
+          action: {
+            label: "Go to Quiz",
+            onClick: () => setActiveTab("quiz")
+          }
+        });
+        setActiveTab("quiz");
+        return;
+      }
+      
+      // Check if course is marked as completed
+      if (!completed) {
+        const shouldComplete = window.confirm(
+          "Course needs to be marked as complete first. Would you like to mark it as complete now?"
+        );
+        
+        if (shouldComplete) {
+          await completeCourse(courseId);
+        } else {
+          return;
+        }
+      }
+      
       console.log(`Initiating certificate generation for course: ${courseId}`);
       const response = await generateCertificate(courseId).unwrap();
       console.log('Certificate generation response:', response);
       
       if (response.success) {
-        toast.success("Certificate generated successfully");
-        
-        // Directly open the certificate in a new window
-        if (response.certificate && response.certificate.id) {
-          const certificateUrl = `http://localhost:3000/api/v1/certificates/${response.certificate.id}/download`;
-          window.open(certificateUrl, '_blank');
-        }
+        toast.success("Certificate generated successfully", {
+          description: "You can now view and download your certificate.",
+          action: {
+            label: "View Certificate",
+            onClick: () => window.open(`/certificate?courseId=${courseId}`, '_blank')
+          }
+        });
         
         // Refetch course progress to update the certificate info
         refetch();
@@ -151,7 +192,7 @@ const CourseProgress = () => {
       }
     } catch (error) {
       console.error('Certificate generation error:', error);
-      toast.error(error.message || "Failed to generate certificate");
+      toast.error(error?.data?.message || error.message || "Failed to generate certificate");
     }
   };
 
@@ -167,9 +208,8 @@ const CourseProgress = () => {
         return;
       }
       
-      // Open the certificate in a new window instead of using the API
-      const certificateUrl = `http://localhost:3000/api/v1/certificates/${certificateId}/download`;
-      window.open(certificateUrl, '_blank');
+      // Navigate to certificate view page instead of direct download
+      window.open(`/certificate?courseId=${courseId}`, '_blank');
       toast.success("Certificate opened in a new window");
     } catch (error) {
       console.error('Certificate download error:', error);
@@ -182,6 +222,30 @@ const CourseProgress = () => {
 
   const currentLectureId = currentLecture?._id || initialLecture?._id;
   
+  const renderCertificateButton = () => {
+    if (data?.hasCertificate) {
+      return (
+        <div className="mt-4 space-y-2">
+          <Link to={`/certificate?courseId=${courseId}`}>
+            <Button className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+              <Award className="h-4 w-4" />
+              View Course Certificate
+            </Button>
+          </Link>
+          {quizResults?.results?.hasPassed && (
+            <Link to={`/quiz-certificate?courseId=${courseId}`}>
+              <Button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700">
+                <FileText className="h-4 w-4" />
+                Download Quiz Scorecard
+              </Button>
+            </Link>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 md:px-8 mb-10">
       <div className="mb-8">
@@ -200,46 +264,72 @@ const CourseProgress = () => {
             <p className="text-xs mt-1">{completedLectures} of {courseDetails.lectures.length} completed ({completionPercentage}%)</p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {completed ? (
               <>
                 <Button variant="outline" onClick={handleInCompleteCourse} size="sm">
                   <CheckCircle size={16} className="mr-2 text-green-500" /> Mark as Incomplete
                 </Button>
-                <Button 
-                  variant="default" 
-                  onClick={handleGenerateCertificate} 
-                  disabled={isGeneratingCertificate}
-                  size="sm"
-                >
-                  <Award size={16} className="mr-2" /> 
-                  {isGeneratingCertificate ? "Generating..." : "Get Certificate"}
-                </Button>
-                {courseDetails?.certificate?.id && (
+                
+                {courseDetails?.certificate?.id ? (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button 
+                      variant="default" 
+                      onClick={() => navigate(`/certificate?courseId=${courseId}`)}
+                      className="bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      <Award size={16} className="mr-2" />
+                      View Course Certificate
+                    </Button>
+                    {quizResults?.results?.hasPassed && (
+                      <Button 
+                        variant="default" 
+                        onClick={() => navigate(`/quiz-certificate?courseId=${courseId}`)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        size="sm"
+                      >
+                        <FileText size={16} className="mr-2" />
+                        Download Quiz Scorecard
+                      </Button>
+                    )}
+                  </div>
+                ) : (
                   <Button 
-                    variant="outline" 
-                    onClick={() => handleDownloadCertificate(courseDetails.certificate.id)} 
-                    disabled={isDownloadingCertificate}
+                    variant="default" 
+                    onClick={handleGenerateCertificate} 
+                    disabled={isGeneratingCertificate}
+                    className="bg-green-600 hover:bg-green-700"
                     size="sm"
                   >
-                    <Download size={16} className="mr-2" />
-                    {isDownloadingCertificate ? "Downloading..." : "Download Certificate"}
+                    <Award size={16} className="mr-2" /> 
+                    {isGeneratingCertificate ? "Generating..." : "Get Certificate"}
                   </Button>
                 )}
               </>
-            ) : completionPercentage === 100 ? (
-              <Button 
-                onClick={handleCompleteCourse} 
-                size="sm"
-                className={!hasPassedQuiz ? "bg-orange-500 hover:bg-orange-600" : ""}
-              >
-                {!hasPassedQuiz ? (
-                  <>You must pass the quiz first</>
-                ) : (
-                  <>Mark as Complete</>
-                )}
-              </Button>
-            ) : null}
+            ) : (
+              <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
+                {hasPassedQuiz && completionPercentage === 100 ? (
+                  <Button 
+                    onClick={handleCompleteCourse} 
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle size={16} className="mr-2" />
+                    Mark Course as Complete
+                  </Button>
+                ) : completionPercentage === 100 ? (
+                  <Button 
+                    onClick={() => setActiveTab("quiz")} 
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    <FileQuestion size={16} className="mr-2" />
+                    Take Quiz to Complete
+                  </Button>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -363,6 +453,8 @@ const CourseProgress = () => {
           </Card>
         </div>
       </div>
+      
+      {renderCertificateButton()}
     </div>
   );
 };

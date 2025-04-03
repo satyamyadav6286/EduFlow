@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import jwt from "jsonwebtoken";
 
 // Get directory name for ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +49,60 @@ const ensureCertificateDir = () => {
   }
 };
 
+// Get a certificate by course ID
+export const getCertificateByCourseid = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.id;
+
+    // Check if certificate exists
+    const certificate = await Certificate.findOne({ userId, courseId });
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Certificate not found for this course"
+      });
+    }
+
+    // Check if the course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found"
+      });
+    }
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Certificate retrieved successfully",
+      data: {
+        id: certificate.certificateId,
+        course: course.courseTitle,
+        student: user.name,
+        issuedDate: certificate.issuedDate,
+        completionDate: certificate.completionDate,
+        downloadUrl: `/api/v1/certificates/${certificate.certificateId}/download`,
+      },
+    });
+  } catch (error) {
+    console.error("Error retrieving certificate:", error);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to retrieve certificate: ${error.message}`
+    });
+  }
+};
+
 // Generate a certificate for a completed course
 export const generateCertificate = async (req, res) => {
   try {
@@ -55,6 +110,10 @@ export const generateCertificate = async (req, res) => {
     const userId = req.id;
 
     console.log(`Generating certificate for user ${userId} and course ${courseId}`);
+
+    // Make sure certificate directory exists
+    const certificateDir = ensureCertificateDir();
+    console.log(`Certificate directory confirmed: ${certificateDir}`);
 
     // Check if the course exists
     const course = await Course.findById(courseId);
@@ -93,25 +152,67 @@ export const generateCertificate = async (req, res) => {
       console.log(`Using completion date: ${completionDate}`);
       
       try {
-        // Generate a new certificate using the enhanced generator
+        // Generate a unique certificate ID
+        const certificateId = generateCertificateId();
+        console.log(`Generated certificate ID: ${certificateId}`);
+        
+        // Generate certificate PDF
         certificateResult = await generateCertificatePDF(userId, courseId);
         console.log(`Certificate generated successfully with ID: ${certificateResult.certificateId}`);
+        
+        // Create certificate record in database
+        existingCertificate = await Certificate.create({
+          userId,
+          courseId,
+          certificateId: certificateResult.certificateId,
+          pdfPath: certificateResult.pdfPath,
+          issuedDate: new Date(),
+          completionDate: completionDate
+        });
+        
+        console.log(`Certificate record created in database: ${existingCertificate._id}`);
       } catch (genError) {
         console.error("Error generating certificate PDF:", genError);
+        // More detailed error logging for validation errors
+        if (genError.name === 'ValidationError') {
+          console.error("Validation error details:", JSON.stringify(genError.errors));
+        }
         return res.status(500).json({
           success: false,
           message: `Failed to generate certificate PDF: ${genError.message}`,
         });
       }
     } else {
-      // Certificate exists, get its details
+      // Certificate exists, check if the PDF exists
       console.log(`Using existing certificate with ID: ${existingCertificate.certificateId}`);
       
-      // Create the return object with existing certificate data
+      // Check if the PDF file exists
+      const pdfFileName = `${existingCertificate.certificateId}.pdf`;
+      const pdfPath = path.resolve(certificateDir, pdfFileName);
+      
+      if (!fs.existsSync(pdfPath)) {
+        console.log(`PDF file doesn't exist, regenerating: ${pdfPath}`);
+        try {
+          // Regenerate the PDF
+          certificateResult = await generateCertificatePDF(userId, courseId);
+          console.log(`Certificate regenerated with ID: ${certificateResult.certificateId}`);
+          
+          // Update the certificate record
+          existingCertificate.pdfPath = certificateResult.pdfPath;
+          await existingCertificate.save();
+        } catch (genError) {
+          console.error("Error regenerating certificate PDF:", genError);
+          return res.status(500).json({
+            success: false,
+            message: `Failed to regenerate certificate PDF: ${genError.message}`,
+          });
+        }
+      }
+      
       certificateResult = {
-        certificate: existingCertificate,
         certificateId: existingCertificate.certificateId,
-        pdfUrl: existingCertificate.pdfPath
+        pdfPath: existingCertificate.pdfPath,
+        certificate: existingCertificate
       };
     }
     
@@ -123,13 +224,16 @@ export const generateCertificate = async (req, res) => {
         id: certificateResult.certificateId,
         course: course.courseTitle,
         student: user.name,
-        issuedDate: certificateResult.certificate.issuedDate || new Date(),
-        completionDate: certificateResult.certificate.completionDate || progress.updatedAt || new Date(),
+        issuedDate: existingCertificate.issuedDate,
+        completionDate: existingCertificate.completionDate,
         downloadUrl: `/api/v1/certificates/${certificateResult.certificateId}/download`,
       },
     });
   } catch (error) {
     console.error("Certificate generation error:", error);
+    if (error.name === 'ValidationError') {
+      console.error("Validation error details:", JSON.stringify(error.errors));
+    }
     return res.status(500).json({
       success: false,
       message: `Failed to generate certificate: ${error.message}`,
@@ -137,13 +241,14 @@ export const generateCertificate = async (req, res) => {
   }
 };
 
-// Simplified download function
+// Simplified download function with no authentication required
 export const downloadCertificate = async (req, res) => {
   try {
     const { certificateId } = req.params;
-    console.log(`Downloading certificate: ${certificateId}`);
-
-    // Find the certificate
+    
+    console.log(`Download certificate request for: ${certificateId}`);
+    
+    // Find the certificate without authentication check
     const certificate = await Certificate.findOne({ certificateId });
     if (!certificate) {
       console.log(`Certificate not found: ${certificateId}`);
@@ -153,24 +258,45 @@ export const downloadCertificate = async (req, res) => {
       });
     }
 
-    // Get the file path
-    const pdfFileName = `certificate_${certificateId}.pdf`;
-    const pdfPath = path.resolve(__dirname, "../certificates", pdfFileName);
-
-    console.log(`Certificate file path: ${pdfPath}`);
-
-    // Check if the file exists
+    // Get the file path 
+    const pdfPath = path.resolve(__dirname, "../certificates", `${certificateId}.pdf`);
+    console.log(`Attempting to download certificate from: ${pdfPath}`);
+    
+    // Check if file exists
     if (!fs.existsSync(pdfPath)) {
       console.log(`Certificate file not found: ${pdfPath}`);
-      return res.status(404).json({
-        success: false,
-        message: "Certificate file not found",
-      });
+      
+      // Try to regenerate certificate
+      try {
+        console.log(`Attempting to regenerate certificate: ${certificateId}`);
+        await generateCertificatePDF(certificate.userId, certificate.courseId);
+        
+        // Check if regeneration worked
+        if (!fs.existsSync(pdfPath)) {
+          return res.status(404).json({
+            success: false,
+            message: "Certificate file not found and regeneration failed. Please try again.",
+          });
+        }
+        
+        console.log("Certificate regenerated successfully");
+      } catch (genError) {
+        console.error("Error regenerating certificate:", genError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to regenerate certificate. Please try again later.",
+        });
+      }
     }
 
-    // Set response headers
+    console.log(`Found certificate file at: ${pdfPath}`);
+
+    // Set response headers for PDF
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename="EduFlow_Certificate_${certificateId}.pdf"`);
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     // Stream the file
     const fileStream = fs.createReadStream(pdfPath);
@@ -182,7 +308,7 @@ export const downloadCertificate = async (req, res) => {
       if (!res.headersSent) {
         res.status(500).json({
           success: false,
-          message: "Error streaming certificate file",
+          message: "Error streaming certificate",
         });
       }
     });
