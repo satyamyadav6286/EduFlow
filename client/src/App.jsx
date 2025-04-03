@@ -6,6 +6,8 @@ import MainLayout from "./layout/MainLayout";
 import Courses from "./pages/student/Courses";
 import MyLearning from "./pages/student/MyLearning";
 import Profile from "./pages/student/Profile";
+import Bookmarks from "./pages/student/Bookmarks";
+import Certificate from "./pages/student/Certificate";
 import Sidebar from "./pages/admin/Sidebar";
 import Dashboard from "./pages/admin/Dashboard";
 import CourseTable from "./pages/admin/course/CourseTable";
@@ -13,10 +15,12 @@ import AddCourse from "./pages/admin/course/AddCourse";
 import EditCourse from "./pages/admin/course/EditCourse";
 import CreateLecture from "./pages/admin/lecture/CreateLecture";
 import EditLecture from "./pages/admin/lecture/EditLecture";
+import QuizEditor from "./pages/admin/course/QuizEditor";
 import CourseDetail from "./pages/student/CourseDetail";
 import CourseProgress from "./pages/student/CourseProgress";
 import SearchPage from "./pages/student/SearchPage";
 import ContactMessages from "./pages/admin/ContactMessages";
+import Instructors from "./pages/admin/Instructors";
 import Testimonials from "./components/Testimonials";
 import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
@@ -65,6 +69,14 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: "bookmarks",
+        element: (
+          <ProtectedRoute>
+            <Bookmarks />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "profile",
         element: (
           <ProtectedRoute>
@@ -102,6 +114,14 @@ const appRouter = createBrowserRouter([
         path: "verify-certificate",
         element: <VerifyCertificate />,
       },
+      {
+        path: "certificate",
+        element: (
+          <ProtectedRoute>
+            <Certificate />
+          </ProtectedRoute>
+        ),
+      },
 
       // admin routes start from here
       {
@@ -137,8 +157,16 @@ const appRouter = createBrowserRouter([
             element: <EditLecture />,
           },
           {
+            path: "course/:courseId/quiz",
+            element: <QuizEditor />,
+          },
+          {
             path: "messages",
             element: <ContactMessages />,
+          },
+          {
+            path: "instructors",
+            element: <Instructors />,
           },
         ],
       },

@@ -7,6 +7,7 @@ import { courseProgressApi } from "@/features/api/courseProgressApi";
 import { contactApi } from "@/features/api/contactApi";
 import { mediaApi } from "@/features/api/mediaApi";
 import { certificateApi } from "@/features/api/certificateApi";
+import { quizApi } from "@/features/api/quizApi";
 
 export const appStore = configureStore({
     reducer: rootRedcuer,
@@ -17,7 +18,8 @@ export const appStore = configureStore({
         courseProgressApi.middleware,
         contactApi.middleware,
         mediaApi.middleware,
-        certificateApi.middleware
+        certificateApi.middleware,
+        quizApi.middleware
     )
 });
 

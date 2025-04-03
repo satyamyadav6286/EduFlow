@@ -10,6 +10,14 @@ import purchaseRoute from "./routes/purchaseCourse.route.js";
 import courseProgressRoute from "./routes/courseProgress.route.js";
 import contactRoute from "./routes/contact.route.js";
 import certificateRoute from "./routes/certificate.route.js";
+import quizRoute from "./routes/quiz.route.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// Get directory name for ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dotenv.config({});
 
@@ -31,6 +39,12 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
  
+// Serve static certificate files
+const uploadsDir = path.join(__dirname, 'uploads');
+console.log('Uploads directory:', uploadsDir);
+app.use('/uploads', express.static(uploadsDir));
+app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
+
 // apis
 app.use("/api/v1/media", mediaRoute);
 app.use("/api/v1/user", userRoute);
@@ -39,6 +53,7 @@ app.use("/api/v1/purchase", purchaseRoute);
 app.use("/api/v1/progress", courseProgressRoute);
 app.use("/api/v1/contact", contactRoute);
 app.use("/api/v1/certificates", certificateRoute);
+app.use("/api/v1/quiz", quizRoute);
  
 // Error handling middleware
 app.use((err, req, res, next) => {

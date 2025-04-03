@@ -1,4 +1,6 @@
 import BuyCourseButtonRazorpay from "@/components/BuyCourseButtonRazorpay";
+import SocialShare from "@/components/SocialShare";
+import BookmarkButton from "@/components/BookmarkButton";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -81,7 +83,20 @@ const CourseDetail = () => {
 
       <div className="max-w-7xl mx-auto my-5 px-4 md:px-8 flex flex-col lg:flex-row justify-between gap-10">
         <div className="w-full lg:w-1/2 space-y-5">
-          <h1 className="font-bold text-xl md:text-2xl">Description</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="font-bold text-xl md:text-2xl">Description</h1>
+            <div className="flex items-center space-x-2">
+              <BookmarkButton 
+                courseId={courseId}
+                courseTitle={course?.courseTitle}
+                courseThumbnail={course?.courseThumbnail}
+              />
+              <SocialShare 
+                title={`${course?.courseTitle} - EduFlow`}
+                description={`Check out this course: ${course?.subTitle || course?.courseTitle}`}
+              />
+            </div>
+          </div>
           <p
             className="text-sm"
             dangerouslySetInnerHTML={{ __html: course.description }}

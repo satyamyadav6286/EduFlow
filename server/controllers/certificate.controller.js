@@ -2,8 +2,8 @@ import { Certificate } from "../models/certificate.model.js";
 import { Course } from "../models/course.model.js";
 import { User } from "../models/user.model.js";
 import { CourseProgress } from "../models/courseProgress.js";
+import { generateCertificate as generateCertificatePDF } from "../utils/certificateGenerator.js";
 import crypto from "crypto";
-import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -84,146 +84,50 @@ export const generateCertificate = async (req, res) => {
     }
 
     // Check if certificate already exists
-    let certificate = await Certificate.findOne({ userId, courseId });
+    let existingCertificate = await Certificate.findOne({ userId, courseId });
+    let certificateResult;
 
-    if (!certificate) {
-      // Create new certificate
-      const certificateId = generateCertificateId();
-      console.log(`Creating new certificate with ID: ${certificateId}`);
-      
+    if (!existingCertificate) {
       // Make sure we have a valid completion date
       const completionDate = progress.updatedAt || new Date();
       console.log(`Using completion date: ${completionDate}`);
       
-      certificate = await Certificate.create({
-        userId,
-        courseId,
-        certificateId,
-        completionDate
-      });
+      try {
+        // Generate a new certificate using the enhanced generator
+        certificateResult = await generateCertificatePDF(userId, courseId);
+        console.log(`Certificate generated successfully with ID: ${certificateResult.certificateId}`);
+      } catch (genError) {
+        console.error("Error generating certificate PDF:", genError);
+        return res.status(500).json({
+          success: false,
+          message: `Failed to generate certificate PDF: ${genError.message}`,
+        });
+      }
     } else {
-      console.log(`Using existing certificate with ID: ${certificate.certificateId}`);
+      // Certificate exists, get its details
+      console.log(`Using existing certificate with ID: ${existingCertificate.certificateId}`);
+      
+      // Create the return object with existing certificate data
+      certificateResult = {
+        certificate: existingCertificate,
+        certificateId: existingCertificate.certificateId,
+        pdfUrl: existingCertificate.pdfPath
+      };
     }
-
-    // Using the successful test approach
-    try {
-      // Ensure certificate directory exists
-      const certificateDir = ensureCertificateDir();
-      const pdfPath = path.resolve(certificateDir, `${certificate.certificateId}.pdf`);
-      console.log(`Creating certificate at: ${pdfPath}`);
-
-      // Create a simple PDF document - working approach from test script
-      const doc = new PDFDocument({
-        layout: "landscape",
-        size: "A4",
-        margin: 50
-      });
-
-      // Create a write stream
-      const stream = fs.createWriteStream(pdfPath);
-      
-      // Pipe the document to the stream
-      doc.pipe(stream);
-
-      // Draw the certificate content
-      doc.fontSize(30).text("CERTIFICATE OF COMPLETION", {
-        align: "center"
-      });
-
-      // EduFlow Header
-      doc.moveDown();
-      doc.fontSize(24).text("EduFlow", {
-        align: "center"
-      });
-
-      // Certificate text
-      doc.moveDown();
-      doc.fontSize(16).text("This is to certify that", {
-        align: "center"
-      });
-
-      // Student name
-      doc.moveDown();
-      doc.fontSize(20).text(user.name, {
-        align: "center"
-      });
-
-      // Course completion text
-      doc.moveDown();
-      doc.fontSize(16).text("has successfully completed the course", {
-        align: "center"
-      });
-
-      // Course name
-      doc.moveDown();
-      doc.fontSize(20).text(course.courseTitle, {
-        align: "center"
-      });
-
-      // Date
-      const completionDate = new Date(certificate.completionDate).toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      doc.moveDown();
-      doc.fontSize(14).text(`Issued on: ${completionDate}`, {
-        align: "center"
-      });
-
-      // Signature
-      doc.moveDown(2);
-      doc.fontSize(14).text("EduFlow Education", {
-        align: "center"
-      });
-
-      // Certificate ID
-      doc.moveDown();
-      doc.fontSize(10).text(`Certificate ID: ${certificate.certificateId}`, {
-        align: "center"
-      });
-
-      // Finish the document
-      doc.end();
-      
-      // Return success immediately, don't wait for the stream to finish
-      console.log('Certificate generation started, returning response');
-      
-      // Set up a timeout to handle any potential errors with finalizing the PDF
-      const timeoutId = setTimeout(() => {
-        console.log("Certificate generation timeout reached, but response already sent");
-      }, 5000);
-      
-      // Handle the finish event for logging only
-      stream.on('finish', () => {
-        clearTimeout(timeoutId);
-        console.log(`Certificate successfully created at: ${pdfPath}`);
-      });
-      
-      stream.on('error', (err) => {
-        clearTimeout(timeoutId);
-        console.error(`Error writing certificate: ${err.message}`);
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: "Certificate generated successfully",
-        certificate: {
-          id: certificate.certificateId,
-          course: course.courseTitle,
-          student: user.name,
-          issuedDate: certificate.issuedDate,
-          completionDate: certificate.completionDate,
-          downloadUrl: `/api/v1/certificates/${certificate.certificateId}/download`,
-        },
-      });
-    } catch (pdfError) {
-      console.error("Error generating PDF:", pdfError);
-      return res.status(500).json({
-        success: false,
-        message: `Failed to generate certificate PDF: ${pdfError.message}`,
-      });
-    }
+    
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      message: "Certificate generated successfully",
+      certificate: {
+        id: certificateResult.certificateId,
+        course: course.courseTitle,
+        student: user.name,
+        issuedDate: certificateResult.certificate.issuedDate || new Date(),
+        completionDate: certificateResult.certificate.completionDate || progress.updatedAt || new Date(),
+        downloadUrl: `/api/v1/certificates/${certificateResult.certificateId}/download`,
+      },
+    });
   } catch (error) {
     console.error("Certificate generation error:", error);
     return res.status(500).json({
@@ -249,136 +153,44 @@ export const downloadCertificate = async (req, res) => {
       });
     }
 
-    // Path to the certificate file
-    const certificateDir = ensureCertificateDir();
-    const pdfPath = path.resolve(certificateDir, `${certificateId}.pdf`);
-    console.log(`Looking for certificate at: ${pdfPath}`);
+    // Get the file path
+    const pdfFileName = `certificate_${certificateId}.pdf`;
+    const pdfPath = path.resolve(__dirname, "../certificates", pdfFileName);
+
+    console.log(`Certificate file path: ${pdfPath}`);
 
     // Check if the file exists
     if (!fs.existsSync(pdfPath)) {
-      console.log(`Certificate file not found, regenerating for: ${certificateId}`);
-      
-      // Get course and user details
-      const course = await Course.findById(certificate.courseId);
-      const user = await User.findById(certificate.userId);
-      
-      if (!course || !user) {
-        return res.status(404).json({
+      console.log(`Certificate file not found: ${pdfPath}`);
+      return res.status(404).json({
+        success: false,
+        message: "Certificate file not found",
+      });
+    }
+
+    // Set response headers
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="EduFlow_Certificate_${certificateId}.pdf"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(pdfPath);
+    fileStream.pipe(res);
+
+    // Handle stream errors
+    fileStream.on("error", (err) => {
+      console.error(`Error streaming certificate file: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(500).json({
           success: false,
-          message: "Course or User not found",
+          message: "Error streaming certificate file",
         });
       }
-      
-      // Ensure we have a valid completion date
-      const completionDate = certificate.completionDate || new Date();
-      console.log(`Using completion date for regeneration: ${completionDate}`);
-      
-      // Create a simple PDF document - same approach that worked in test
-      const doc = new PDFDocument({
-        layout: "landscape",
-        size: "A4",
-        margin: 50
-      });
-
-      // Create a write stream
-      const stream = fs.createWriteStream(pdfPath);
-      
-      // Pipe the document to the stream
-      doc.pipe(stream);
-
-      // Draw the certificate content
-      doc.fontSize(30).text("CERTIFICATE OF COMPLETION", {
-        align: "center"
-      });
-
-      // EduFlow Header
-      doc.moveDown();
-      doc.fontSize(24).text("EduFlow", {
-        align: "center"
-      });
-
-      // Certificate text
-      doc.moveDown();
-      doc.fontSize(16).text("This is to certify that", {
-        align: "center"
-      });
-
-      // Student name
-      doc.moveDown();
-      doc.fontSize(20).text(user.name, {
-        align: "center"
-      });
-
-      // Course completion text
-      doc.moveDown();
-      doc.fontSize(16).text("has successfully completed the course", {
-        align: "center"
-      });
-
-      // Course name
-      doc.moveDown();
-      doc.fontSize(20).text(course.courseTitle, {
-        align: "center"
-      });
-
-      // Date
-      doc.moveDown();
-      doc.fontSize(14).text(`Issued on: ${completionDate.toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })}`, {
-        align: "center"
-      });
-
-      // Signature
-      doc.moveDown(2);
-      doc.fontSize(14).text("EduFlow Education", {
-        align: "center"
-      });
-
-      // Certificate ID
-      doc.moveDown();
-      doc.fontSize(10).text(`Certificate ID: ${certificate.certificateId}`, {
-        align: "center"
-      });
-
-      // Finish the document
-      doc.end();
-      
-      // Wait for the file to be created - important for the download
-      await new Promise((resolve, reject) => {
-        stream.on('finish', resolve);
-        stream.on('error', reject);
-      });
-      
-      console.log(`Certificate file successfully created: ${pdfPath}`);
-    }
-
-    // Load the PDF file
-    try {
-      const data = fs.readFileSync(pdfPath);
-      
-      // Set headers for file download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="EduFlow_Certificate.pdf"`);
-      res.setHeader('Content-Length', data.length);
-      
-      // Send the file data
-      res.send(data);
-      console.log('Certificate file sent successfully');
-    } catch (readError) {
-      console.error(`Error reading certificate file: ${readError.message}`);
-      return res.status(500).json({
-        success: false,
-        message: `Failed to read certificate file: ${readError.message}`,
-      });
-    }
+    });
   } catch (error) {
-    console.error(`Download certificate error: ${error.message}`);
+    console.error("Certificate download error:", error);
     return res.status(500).json({
       success: false,
-      message: `Failed to download certificate: ${error.message}`,
+      message: "Failed to download certificate",
     });
   }
 };
@@ -387,6 +199,7 @@ export const downloadCertificate = async (req, res) => {
 export const verifyCertificate = async (req, res) => {
   try {
     const { certificateId } = req.params;
+    console.log(`Verifying certificate: ${certificateId}`);
 
     // Find the certificate
     const certificate = await Certificate.findOne({ certificateId })
@@ -396,26 +209,28 @@ export const verifyCertificate = async (req, res) => {
     if (!certificate) {
       return res.status(404).json({
         success: false,
-        message: "Certificate not found or invalid",
+        message: "Certificate not found or is invalid",
       });
     }
 
+    // Return certificate details
     return res.status(200).json({
       success: true,
       message: "Certificate verified successfully",
       certificate: {
         id: certificate.certificateId,
-        course: certificate.courseId.courseTitle,
-        student: certificate.userId.name,
+        student: certificate.userId?.name || "Unknown Student",
+        course: certificate.courseId?.courseTitle || "Unknown Course",
+        completionDate: certificate.completionDate || certificate.issuedDate,
         issuedDate: certificate.issuedDate,
-        completionDate: certificate.completionDate,
+        issuer: "EduFlow Learning Platform"
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Certificate verification error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to verify certificate",
     });
   }
-}; 
+};

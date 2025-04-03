@@ -15,6 +15,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CourseTab from "./CourseTab";
 import { toast } from "sonner";
+import { FileQuestion, BookText } from "lucide-react";
 
 const EditCourse = () => {
   const params = useParams();
@@ -96,7 +97,17 @@ const EditCourse = () => {
           </AlertDialog>
 
           <Link to="lecture">
-            <Button className="hover:text-blue-600" variant="link">Go to lectures page</Button>
+            <Button className="hover:text-blue-600" variant="outline" size="sm">
+              <BookText className="h-4 w-4 mr-2" />
+              Manage Lectures
+            </Button>
+          </Link>
+          
+          <Link to="quiz">
+            <Button className="hover:text-blue-600" variant="outline" size="sm">
+              <FileQuestion className="h-4 w-4 mr-2" />
+              Manage Quiz
+            </Button>
           </Link>
         </div>
       </div>

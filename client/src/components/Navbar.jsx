@@ -1,4 +1,4 @@
-import { Award, Menu, School } from "lucide-react";
+import { Award, Menu, School, Bookmark } from "lucide-react";
 import React, { useEffect } from "react";
 import {
   DropdownMenu,
@@ -58,6 +58,9 @@ const Navbar = () => {
         <div className="flex items-center gap-4">
           <Link to="/verify-certificate" className="flex items-center gap-1 text-sm hover:text-blue-500">
             <Award size={16} /> Verify Certificate
+          </Link>
+          <Link to="/bookmarks" className="flex items-center gap-1 text-sm hover:text-blue-500">
+            <Bookmark size={16} /> Bookmarks
           </Link>
         </div>
         {/* User icons and dark mode icon  */}
@@ -152,6 +155,9 @@ const MobileNavbar = ({user}) => {
         <nav className="flex flex-col space-y-4">
           <Link to="/verify-certificate" className="flex items-center gap-1">
             <Award size={16} /> Verify Certificate
+          </Link>
+          <Link to="/bookmarks" className="flex items-center gap-1">
+            <Bookmark size={16} /> Bookmarks
           </Link>
           <Link to="/my-learning">My Learning</Link>
           <Link to="/profile">Edit Profile</Link>
