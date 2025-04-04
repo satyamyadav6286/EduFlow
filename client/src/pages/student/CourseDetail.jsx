@@ -50,8 +50,8 @@ const CourseDetail = () => {
   return (
     <div className="space-y-5">
       <div className="bg-[#0f172a] text-white">
-        <div className="max-w-7xl mx-auto py-8 px-4 md:px-8 flex flex-col md:flex-row gap-6">
-          <div className="flex flex-col gap-2 md:w-2/3">
+        <div className="max-w-7xl mx-auto py-8 px-4 md:px-8">
+          <div className="flex flex-col gap-2">
             <h1 className="font-bold text-2xl md:text-3xl">
               {course?.courseTitle}
             </h1>
@@ -67,16 +67,6 @@ const CourseDetail = () => {
               <p>Last updated {course?.createdAt.split("T")[0]}</p>
             </div>
             <p>Students enrolled: {course?.enrolledStudents.length}</p>
-          </div>
-          
-          <div className="md:w-1/3 rounded-md overflow-hidden">
-            <MediaDisplay
-              type="image"
-              src={course?.courseThumbnail}
-              alt={course?.courseTitle || "Course thumbnail"}
-              className="w-full h-[200px] object-cover"
-              fallbackImage="https://via.placeholder.com/600x400?text=Course+Image"
-            />
           </div>
         </div>
       </div>
@@ -126,24 +116,13 @@ const CourseDetail = () => {
           <Card className="sticky top-20">
             <CardContent className="p-4 flex flex-col">
               <div className="w-full aspect-video mb-4">
-                {course.lectures.length > 0 ? (
-                  <MediaDisplay
-                    type="video"
-                    src={course.lectures[0].videoUrl}
-                    className="w-full h-full rounded-lg overflow-hidden"
-                    videoProps={{
-                      controls: true,
-                      playing: false,
-                      playbackRate: 1.0
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <p className="text-gray-500">No preview available</p>
-                  </div>
-                )}
+                <img 
+                  src={course?.courseThumbnail || "https://via.placeholder.com/600x400?text=Course+Image"} 
+                  alt={course?.courseTitle || "Course thumbnail"}
+                  className="w-full h-full object-cover rounded-lg"
+                />
               </div>
-              <h1 className="font-medium">{course.lectures[0]?.lectureTitle || "No lectures available"}</h1>
+              <h1 className="font-medium">Introduction to {course?.courseTitle}</h1>
               <Separator className="my-2" />
               <h1 className="text-xl md:text-2xl font-bold">₹{course.coursePrice || 0}</h1>
               

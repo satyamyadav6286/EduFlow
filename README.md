@@ -1,7 +1,7 @@
 # EduFlow - Modern Learning Management System
 
 <div align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge" alt="Version 1.1.0">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge" alt="Version 1.2.0">
   <img src="https://img.shields.io/badge/license-MIT-success?style=for-the-badge" alt="License MIT">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
 </div>
@@ -33,6 +33,7 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
 - [Usage Guide](#-usage-guide)
 - [API Reference](#-api-reference)
 - [Security Features](#-security-features)
+- [Recent Updates](#-recent-updates)
 - [Future Roadmap](#-future-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -198,6 +199,29 @@ Our RESTful API is organized by resource:
 - **Input Validation** - Request validation and sanitization
 - **Rate Limiting** - Protection against brute force attacks
 - **Public Document Verification** - Secure certificate validation system
+
+## 🆕 Recent Updates
+
+### Version 1.2.0
+
+#### UI Improvements
+- **Enhanced Course Detail Page** - Improved layout with course thumbnail in the purchase card
+- **Streamlined Course Progress Page** - Better visual presentation of lecture content
+- **Cleaner Descriptions** - HTML tag stripping for better readability
+- **Improved Video Player** - Non-autoplay videos that respect user interaction
+
+#### Bug Fixes
+- **Fixed Mark as Complete Bug** - Resolved issue where marking lectures as complete would redirect to first lecture
+- **Lecture Selection Persistence** - Selected lectures now remain active after course progress updates
+- **Certificate Display Issues** - Fixed rendering problems with certificates and scorecard downloads
+- **Media Loading Optimization** - Improved video loading with metadata preloading
+- **Course Content Navigation** - Enhanced sidebar selection states and completion indicators
+
+#### Under the Hood
+- **Redux State Management** - Added courseSlice for better client-side data handling
+- **Race Condition Prevention** - Added safeguards against state conflicts during API calls
+- **Error Handling** - Improved error feedback and recovery mechanisms
+- **Admin Seed Script** - Added utility to create instructor accounts
 
 ## 🔮 Future Roadmap
 

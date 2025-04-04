@@ -20,11 +20,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDispatch } from "react-redux";
+import { getCourseInfo, getCourseProgress, markLectureComplete } from "@/features/courseSlice";
 
 const CourseProgress = () => {
   const params = useParams();
   const courseId = params.courseId;
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { data, isLoading, isError, refetch } =
     useGetCourseProgressQuery(courseId);
 
@@ -49,6 +52,47 @@ const CourseProgress = () => {
 
   const [currentLecture, setCurrentLecture] = useState(null);
   const [activeTab, setActiveTab] = useState("content");
+  const [selectedLecture, setSelectedLecture] = useState(null);
+
+  useEffect(() => {
+    if (courseId) {
+      // Fetch the course info and structure
+      dispatch(getCourseInfo(courseId));
+      // Fetch user's progress for this course
+      dispatch(getCourseProgress(courseId));
+    }
+  }, [courseId, dispatch]);
+
+  // Ensure first lecture is loaded immediately on data load, but only once
+  useEffect(() => {
+    if (data?.data?.courseDetails?.lectures?.length > 0 && !selectedLecture) {
+      const firstLecture = data.data.courseDetails.lectures[0];
+      setCurrentLecture(firstLecture);
+      setSelectedLecture(firstLecture);
+      
+      // Only mark as viewed if we haven't done so before and first lecture exists
+      if (firstLecture && 
+          data?.data?.progress && 
+          !data.data.progress.some(p => p.lectureId === firstLecture._id && p.viewed)) {
+        // Using a timeout to prevent potential race conditions
+        const timer = setTimeout(() => {
+          // Wrap in try/catch to prevent unhandled errors
+          try {
+            updateLectureProgress({ courseId, lectureId: firstLecture._id });
+          } catch (error) {
+            console.error("Error marking first lecture as viewed:", error);
+          }
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [data, selectedLecture, courseId, updateLectureProgress]);
+
+  // Create an array of completed lecture IDs for easier checking
+  const completedLectures = data?.data?.progress?.filter(prog => prog.viewed).map(prog => prog.lectureId) || [];
+  const completionPercentage = data?.data?.courseDetails?.lectures?.length 
+    ? Math.round((completedLectures.length / data.data.courseDetails.lectures.length) * 100)
+    : 0;
 
   useEffect(() => {
     if (completedSuccess) {
@@ -100,15 +144,33 @@ const CourseProgress = () => {
   };
 
   const handleLectureProgress = async (lectureId) => {
-    await updateLectureProgress({ courseId, lectureId });
-    refetch();
+    try {
+      // Store current selected lecture object
+      const currentSelectedLecture = selectedLecture;
+      
+      // Call API to update progress
+      await updateLectureProgress({ courseId, lectureId }).unwrap();
+      
+      // Manually update completedLectures array to provide immediate feedback
+      // This prevents UI jumps while waiting for refetch
+      
+      // Refetch data in the background for consistency
+      await refetch();
+      
+      // Ensure we maintain the same selected lecture
+      if (currentSelectedLecture) {
+        setSelectedLecture(currentSelectedLecture);
+      }
+    } catch (error) {
+      console.error("Failed to update lecture progress:", error);
+      toast.error("Failed to mark lecture as complete");
+    }
   };
   
   // Handle select a specific lecture to watch
   const handleSelectLecture = (lecture) => {
-    setCurrentLecture(lecture);
-    handleLectureProgress(lecture._id);
-    setActiveTab("content");
+    setSelectedLecture(lecture);
+    // Don't automatically mark as complete when selecting
   };
 
   const handleCompleteCourse = async () => {
@@ -217,9 +279,6 @@ const CourseProgress = () => {
     }
   };
 
-  const completedLectures = progress.filter(prog => prog.viewed).length;
-  const completionPercentage = Math.round((completedLectures / courseDetails.lectures.length) * 100);
-
   const currentLectureId = currentLecture?._id || initialLecture?._id;
   
   const renderCertificateButton = () => {
@@ -246,6 +305,32 @@ const CourseProgress = () => {
     return null;
   };
 
+  // Mark lecture as complete separately using Redux
+  const handleMarkComplete = () => {
+    if (selectedLecture && !completedLectures.includes(selectedLecture._id)) {
+      try {
+        // Keep track of the current selected lecture
+        const currentLectureToKeep = selectedLecture;
+        
+        // Use the Redux approach
+        dispatch(markLectureComplete({ courseId, lectureId: selectedLecture._id }))
+          .then(() => {
+            // Ensure we don't lose our selected lecture
+            setSelectedLecture(currentLectureToKeep);
+            // Refetch to update the UI
+            refetch();
+          })
+          .catch(error => {
+            console.error("Error marking lecture complete:", error);
+            toast.error("Failed to mark lecture as complete");
+          });
+      } catch (error) {
+        console.error("Error in handleMarkComplete:", error);
+        toast.error("Failed to mark lecture as complete");
+      }
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 md:px-8 mb-10">
       <div className="mb-8">
@@ -261,7 +346,7 @@ const CourseProgress = () => {
                 style={{ width: `${completionPercentage}%` }}
               ></div>
             </div>
-            <p className="text-xs mt-1">{completedLectures} of {courseDetails.lectures.length} completed ({completionPercentage}%)</p>
+            <p className="text-xs mt-1">{completedLectures.length} of {courseDetails.lectures.length} completed ({completionPercentage}%)</p>
           </div>
           
           <div className="flex flex-wrap gap-2">
@@ -356,41 +441,110 @@ const CourseProgress = () => {
             
             {/* Course Content Tab */}
             <TabsContent value="content" className="mt-4">
-              <div className="relative aspect-video">
-                <MediaDisplay
-                  type="video"
-                  src={currentLecture?.videoUrl || initialLecture.videoUrl}
-                  className="rounded-lg overflow-hidden"
-                  videoProps={{
-                    width: "100%",
-                    height: "100%",
-                    controls: true,
-                    onStart: () => handleVideoStart(currentLecture?._id || initialLecture._id),
-                    config: {
-                      file: {
-                        attributes: {
-                          controlsList: 'nodownload',
-                          preload: 'auto'
+              <div className="col-span-12 md:col-span-9 p-4 bg-white dark:bg-gray-800 rounded-lg shadow overflow-y-auto" style={{ height: 'calc(100vh - 160px)' }}>
+                {selectedLecture ? (
+                  <>
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
+                      {selectedLecture?.lectureTitle || selectedLecture?.title}
+                    </h2>
+                    
+                    {/* Media player */}
+                    <div className="aspect-w-16 aspect-h-9 mb-6 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                      {selectedLecture?.type === 'video' || selectedLecture?.videoUrl ? (
+                        <MediaDisplay
+                          type="video"
+                          src={selectedLecture?.content || selectedLecture?.videoUrl}
+                          alt={selectedLecture?.title || selectedLecture?.lectureTitle}
+                          className="w-full h-full"
+                          videoProps={{
+                            width: '100%',
+                            height: '100%',
+                            onEnded: handleMarkComplete,
+                            controls: true,
+                            config: {
+                              file: {
+                                attributes: {
+                                  controlsList: 'nodownload',
+                                  preload: 'metadata'
+                                }
+                              }
+                            }
+                          }}
+                        />
+                      ) : selectedLecture?.type === 'pdf' || (selectedLecture?.content && selectedLecture?.content.includes('.pdf')) ? (
+                        <div className="h-full flex items-center justify-center p-4">
+                          <Button 
+                            onClick={() => window.open(selectedLecture?.content, '_blank')}
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                          >
+                            View PDF
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="h-full flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-700">
+                          <p className="text-gray-500 dark:text-gray-300">
+                            This content type is not supported for preview.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Completion button */}
+                    <div className="flex justify-end mb-4">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault(); // Prevent any default behavior
+                          e.stopPropagation(); // Stop event propagation
+                          if (selectedLecture && !completedLectures.includes(selectedLecture._id)) {
+                            // Store the current selected lecture to ensure we don't lose focus
+                            const lectureToMark = {...selectedLecture};
+                            
+                            // Use the direct API call for more control
+                            updateLectureProgress({ 
+                              courseId, 
+                              lectureId: lectureToMark._id 
+                            })
+                              .unwrap()
+                              .then(() => {
+                                // Force the same lecture to stay selected
+                                setSelectedLecture(lectureToMark);
+                                // Refetch to update UI
+                                refetch();
+                                toast.success("Lecture marked as complete");
+                              })
+                              .catch(error => {
+                                console.error("Error marking lecture as complete:", error);
+                                toast.error("Failed to mark lecture as complete");
+                              });
+                          }
+                        }}
+                        disabled={!selectedLecture || completedLectures.includes(selectedLecture?._id)}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          !selectedLecture || completedLectures.includes(selectedLecture?._id)
+                            ? 'bg-green-500 text-white cursor-not-allowed'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
+                      >
+                        {!selectedLecture ? 'Select a lecture' : 
+                          completedLectures.includes(selectedLecture?._id) ? 'Completed' : 'Mark as Complete'}
+                      </button>
+                    </div>
+
+                    {/* Description */}
+                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <h3 className="text-lg font-medium mb-2 text-gray-800 dark:text-white">Description</h3>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {(selectedLecture?.description || courseDetails?.description || 'No description available.')
+                          .replace(/<\/?[^>]+(>|$)/g, '')  // Strips all HTML tags
                         }
-                      }
-                    }
-                  }}
-                />
-              </div>
-              
-              {/* Display current watching lecture title */}
-              <div className="mt-4">
-                <h3 className="font-medium text-lg">
-                  {`Lecture ${
-                    courseDetails.lectures.findIndex(
-                      (lec) =>
-                        lec._id === (currentLecture?._id || initialLecture._id)
-                    ) + 1
-                  }: ${currentLecture?.lectureTitle || initialLecture.lectureTitle}`}
-                </h3>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
-                  {currentLecture?.description || initialLecture.description}
-                </p>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-center items-center h-60">
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
             </TabsContent>
             
@@ -416,9 +570,8 @@ const CourseProgress = () => {
               <h2 className="text-xl font-bold mb-4">Course Lectures</h2>
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                 {courseDetails.lectures.map((lecture, index) => {
-                  const isCompleted = isLectureCompleted(lecture._id);
-                  const isSelected =
-                    lecture._id === (currentLecture?._id || initialLecture._id);
+                  const isCompleted = completedLectures.includes(lecture._id);
+                  const isSelected = selectedLecture?._id === lecture._id || currentLecture?._id === lecture._id;
 
                   return (
                     <div
@@ -439,7 +592,7 @@ const CourseProgress = () => {
                       </div>
                       <div>
                         <p className="font-medium">
-                          {index + 1}. {lecture.lectureTitle}
+                          {index + 1}. {lecture.lectureTitle || lecture.title}
                         </p>
                         {lecture.isPreviewFree && (
                           <Badge className="mt-1" variant="outline">Free Preview</Badge>
