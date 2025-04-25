@@ -88,24 +88,58 @@ export const logout = async (_,res) => {
 }
 export const getUserProfile = async (req,res) => {
     try {
+        console.log('getUserProfile called, userId:', req.id);
+        
+        // Try finding the user without populate first to isolate issues
         const userId = req.id;
-        const user = await User.findById(userId).select("-password").populate("enrolledCourses");
-        if(!user){
-            return res.status(404).json({
-                message:"Profile not found",
-                success:false
-            })
+        let user = null;
+        
+        try {
+            user = await User.findById(userId).select("-password");
+            if(!user){
+                console.log('User not found with ID:', userId);
+                return res.status(404).json({
+                    message: "Profile not found",
+                    success: false
+                });
+            }
+        } catch (findError) {
+            console.error('Error finding user by ID:', findError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to find user by ID",
+                error: findError.message
+            });
         }
+        
+        // Now try to populate enrolledCourses separately
+        try {
+            if (user.enrolledCourses && user.enrolledCourses.length > 0) {
+                const populatedUser = await User.findById(userId)
+                    .select("-password")
+                    .populate("enrolledCourses");
+                
+                // If populate succeeds, use the populated user
+                user = populatedUser;
+                console.log('Successfully populated user courses');
+            }
+        } catch (populateError) {
+            console.error('Error populating courses:', populateError);
+            // Continue with unpopulated user rather than failing completely
+            console.log('Continuing with unpopulated user');
+        }
+        
         return res.status(200).json({
-            success:true,
+            success: true,
             user
-        })
+        });
     } catch (error) {
-        console.log(error);
+        console.error('GetUserProfile error:', error);
         return res.status(500).json({
-            success:false,
-            message:"Failed to load user"
-        })
+            success: false,
+            message: "Failed to load user",
+            error: error.message
+        });
     }
 }
 export const updateProfile = async (req,res) => {
