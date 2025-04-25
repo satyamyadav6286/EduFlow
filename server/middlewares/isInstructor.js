@@ -11,7 +11,7 @@ const isInstructor = async (req, res, next) => {
       });
     }
     
-    if (user.role !== "instructor") {
+    if (user.role !== 'INSTRUCTOR' && user.role !== 'instructor') {
       return res.status(403).json({
         message: "Access denied. Only instructors can perform this action.",
         success: false,
