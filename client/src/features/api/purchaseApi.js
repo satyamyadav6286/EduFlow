@@ -1,11 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { COURSE_PURCHASE_API } from "../../config/apiConfig";
+import { getBestToken } from "@/middlewares/tokenValidator";
 
 export const purchaseApi = createApi({
   reducerPath: "purchaseApi",
   baseQuery: fetchBaseQuery({
     baseUrl: COURSE_PURCHASE_API,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      // Get the token from localStorage
+      const token = getBestToken();
+      
+      // If we have a token, add it to the headers
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+        console.log('Adding auth token to purchase API headers:', token.substring(0, 10) + '...');
+      } else {
+        console.log('No auth token available for purchase request');
+      }
+      
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     createCheckoutSession: builder.mutation({

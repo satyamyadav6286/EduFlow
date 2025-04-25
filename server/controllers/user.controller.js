@@ -2,6 +2,7 @@ import {User} from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../utils/generateToken.js";
 import { deleteMediaFromCloudinary, uploadMedia } from "../utils/cloudinary.js";
+import jwt from "jsonwebtoken";
 
 export const register = async (req,res) => {
     try {
@@ -214,6 +215,57 @@ export const getAllInstructors = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to fetch instructors"
+        });
+    }
+}
+
+export const refreshToken = async (req, res) => {
+    try {
+        const userId = req.id; // Extract from authenticated request
+        
+        console.log('Refreshing token for user:', userId);
+        
+        // Find the user to include updated user data in response
+        const user = await User.findById(userId).select("-password");
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        
+        // Generate a new token
+        const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
+            expiresIn: "1d",
+        });
+        
+        // Set cookie options based on environment
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        // Configure cookie for cross-domain use in production
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+        };
+        
+        console.log('Setting refreshed token cookie with options:', cookieOptions);
+        
+        return res
+            .status(200)
+            .cookie("token", token, cookieOptions)
+            .json({
+                success: true,
+                message: "Token refreshed successfully",
+                token, // Include token in response for client-side storage
+                user
+            });
+    } catch (error) {
+        console.log('Token refresh error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to refresh token"
         });
     }
 }

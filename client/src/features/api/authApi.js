@@ -1,12 +1,27 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 import { userLoggedIn, userLoggedOut } from "../authSlice";
 import { USER_API } from "../../config/apiConfig";
+import { getBestToken } from "@/middlewares/tokenValidator";
 
 export const authApi = createApi({
     reducerPath:"authApi",
     baseQuery:fetchBaseQuery({
         baseUrl:USER_API,
-        credentials:'include'
+        credentials:'include',
+        prepareHeaders: (headers) => {
+            // Get the token from localStorage
+            const token = getBestToken();
+            
+            // If we have a token, add it to the headers
+            if (token) {
+                headers.set('Authorization', `Bearer ${token}`);
+                console.log('Adding auth token to headers:', token.substring(0, 10) + '...');
+            } else {
+                console.log('No auth token available for request');
+            }
+            
+            return headers;
+        },
     }),
     endpoints: (builder) => ({
         registerUser: builder.mutation({

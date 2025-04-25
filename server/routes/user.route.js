@@ -6,7 +6,8 @@ import {
     register, 
     updateProfile, 
     createInstructor, 
-    getAllInstructors 
+    getAllInstructors,
+    refreshToken
 } from "../controllers/user.controller.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
 import isInstructor from "../middlewares/isInstructor.js";
@@ -21,5 +22,6 @@ router.route("/profile").get(isAuthenticated, getUserProfile);
 router.route("/profile/update").put(isAuthenticated, upload.single("profilePhoto"), updateProfile);
 router.route("/instructor").post(isAuthenticated, isInstructor, createInstructor);
 router.route("/instructors").get(isAuthenticated, isInstructor, getAllInstructors);
+router.route("/refresh-token").post(isAuthenticated, refreshToken);
 
 export default router;

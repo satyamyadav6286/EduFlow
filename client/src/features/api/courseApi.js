@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { COURSE_API } from "../../config/apiConfig";
+import { getBestToken } from "@/middlewares/tokenValidator";
 
 export const courseApi = createApi({
   reducerPath: "courseApi",
@@ -7,6 +8,20 @@ export const courseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: COURSE_API,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      // Get the token from localStorage
+      const token = getBestToken();
+      
+      // If we have a token, add it to the headers
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+        console.log('Adding auth token to course API headers:', token.substring(0, 10) + '...');
+      } else {
+        console.log('No auth token available for course request');
+      }
+      
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     createCourse: builder.mutation({
