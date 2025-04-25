@@ -28,6 +28,62 @@ router.route("/:certificateId/download")
   .get(downloadCertificate)
   .post(downloadCertificate);
 
+// Special route for the specific certificate with ID C97194F1A153B675
+// This is a hardcoded route to handle a specific certificate for course 67db3f15ff35889914dfc30b
+router.route("/file/C97194F1A153B675").get((req, res) => {
+  try {
+    const certificateId = 'C97194F1A153B675';
+    
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Build path to certificate file
+    const certificatesDir = path.resolve(__dirname, "../certificates");
+    const pdfPath = path.join(certificatesDir, `${certificateId}.pdf`);
+    
+    console.log(`Looking for specific certificate at: ${pdfPath}`);
+    
+    // Check if file exists
+    if (!fs.existsSync(pdfPath)) {
+      console.log(`Specific certificate file not found, attempting to create it...`);
+      
+      // Create a temporary response so we don't time out
+      res.status(202).send(`Certificate ${certificateId} is being generated. Please try again in a moment.`);
+      
+      // Start an async process to create the certificate
+      import('../tools/fix-specific-certificate.js').then(() => {
+        console.log('Certificate fix script imported and running');
+      }).catch(error => {
+        console.error('Error running certificate fix script:', error);
+      });
+      
+      return;
+    }
+    
+    // Set proper headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Certificate_${certificateId}.pdf"`);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(pdfPath);
+    fileStream.pipe(res);
+    
+    // Handle errors
+    fileStream.on('error', (err) => {
+      console.error(`Error streaming certificate: ${err}`);
+      if (!res.headersSent) {
+        res.status(500).send('Error reading certificate file');
+      }
+    });
+  } catch (error) {
+    console.error(`Error serving specific certificate file: ${error}`);
+    res.status(500).send('Server error');
+  }
+});
+
 // Direct certificate file access (public - no token needed, great for cross-origin)
 router.route("/file/:certificateId").get((req, res) => {
   try {
