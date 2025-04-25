@@ -244,53 +244,41 @@ const Certificate = () => {
   
   // Handle view certificate
   const handleViewCertificate = () => {
-    // Special case for Python course
-    if (courseId === '67db3f15ff35889914dfc30b') {
-      const pythonCertId = 'C97194F1A153B675';
-      window.open(`http://localhost:3500/certificates/file/${pythonCertId}`, '_blank');
-      return;
-    }
+    // Get certificate ID - either from API or fallback
+    const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
     
     if (!certId) {
       toast.error('Certificate not available');
       return;
     }
     
-    const timestamp = Date.now();
-    
-    // Use multiple potential URLs to try accessing the certificate
-    const urls = [
-      // Direct certificate server URL
-      `http://localhost:3500/certificates/file/${certId}?t=${timestamp}`,
-      // Primary API URL
-      `${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
-      // Alternative path format
-      `https://eduflow-pvb3.onrender.com/certificates/${certId}?t=${timestamp}`,
-      // Local server path
-      `http://localhost:3000/certificates/${certId}?t=${timestamp}`
-    ];
-    
-    // Open the first URL
-    window.open(urls[0], '_blank');
-    
-    // Show alternative links if needed
-    if (apiDown) {
-      toast("If the certificate doesn't load, try these alternative links:", {
-        description: (
-          <div className="mt-2 flex flex-col gap-2">
-            {urls.slice(1).map((url, index) => (
-              <button
-                key={index}
-                onClick={() => window.open(url, '_blank')}
-                className="text-left text-xs text-blue-500 hover:text-blue-700 underline"
-              >
-                Alternative Link {index + 1}
-              </button>
-            ))}
-          </div>
-        ),
-        duration: 10000,
-      });
+    try {
+      // Generate a unique ID for this view to prevent caching
+      const timestamp = Date.now();
+      
+      // Create URLs to try in order of preference
+      const urls = [
+        // Primary API URL
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
+        // Direct certificate server (fallback)
+        `http://localhost:3500/certificates/file/${certId}?t=${timestamp}`,
+        // Alternative path format
+        `http://localhost:3000/certificates/file/${certId}?t=${timestamp}`
+      ];
+      
+      // Log for debugging
+      console.log("Opening certificate from:", urls[0]);
+      
+      // Open the first URL
+      window.open(urls[0], '_blank');
+      
+      // Show alternative links if needed
+      if (apiDown) {
+        showAlternativeLinks(urls);
+      }
+    } catch (error) {
+      console.error("Failed to view certificate:", error);
+      toast.error("Could not open certificate. Please try again later.");
     }
   };
   
@@ -483,18 +471,6 @@ const Certificate = () => {
             View Certificate
           </Button>
           
-          {/* Special direct button for Python course */}
-          {courseId === '67db3f15ff35889914dfc30b' && (
-            <Button 
-              onClick={downloadPythonCertificate}
-              variant="secondary" 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Direct Python Certificate
-            </Button>
-          )}
-          
           <Button 
             onClick={() => navigate(`/course-progress/${courseId}`)} 
             variant="secondary" 
@@ -508,4 +484,4 @@ const Certificate = () => {
   );
 };
 
-export default Certificate; 
+export default Certificate;
