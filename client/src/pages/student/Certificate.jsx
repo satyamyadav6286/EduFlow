@@ -3,14 +3,14 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGenerateCertificateMutation, useGetCertificateQuery } from '@/features/api/certificateApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Share2, Award, Copy, ExternalLink, Printer, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Download, Share2, Award, Copy, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSelector } from 'react-redux';
 
 const Certificate = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { courseId: pathCourseId } = useParams(); // Get courseId from path parameter
+  const { courseId: pathCourseId } = useParams();
   const searchParams = new URLSearchParams(location.search);
   const queryCourseId = searchParams.get('courseId');
   
@@ -20,59 +20,103 @@ const Certificate = () => {
   const user = useSelector((state) => state.auth.user);
   
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [apiDown, setApiDown] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  // Certificate IDs for specific known courses - fallback if API is down
+  const fallbackCertificates = {
+    '67db3f15ff35889914dfc30b': {
+      id: 'C97194F1A153B675',
+      course: 'Python for Beginners'
+    },
+    '67db418065f818f18e216e23': {
+      id: '9D2B55F0DD51AE83',
+      course: 'React JS Development'
+    }
+  };
   
   // For API fallback
   const [generateCertificate] = useGenerateCertificateMutation();
   const { 
     data: certificateData, 
     isLoading, 
+    isError, 
     error, 
     refetch 
-  } = useGetCertificateQuery(courseId, { skip: !courseId });
+  } = useGetCertificateQuery(courseId, { 
+    skip: !courseId,
+    // If API call fails after 10 seconds, consider it down
+    pollingInterval: apiDown ? 0 : 10000
+  });
   
   const certificate = certificateData?.data;
   
   // Try to generate certificate if not found
   useEffect(() => {
-    if (error && courseId) {
+    if (isError && courseId && !apiDown && retryCount < 2) {
       handleGenerateCertificate();
+      setRetryCount(prev => prev + 1);
     }
-  }, [error, courseId]);
+    
+    // Check if API is down based on error type
+    if (isError && (error?.status === 'FETCH_ERROR' || error?.status >= 500)) {
+      console.error('API connection issue detected:', error);
+      setApiDown(true);
+    }
+  }, [isError, courseId, apiDown, retryCount]);
   
   // Function to generate certificate with better error handling
   const handleGenerateCertificate = async () => {
     try {
-      toast.info("Generating certificate...");
+      setIsRetrying(true);
+      toast.info("Attempting to generate certificate...");
       await generateCertificate(courseId).unwrap();
       toast.success("Certificate generated successfully!");
       refetch();
     } catch (error) {
       console.error("Certificate generation error:", error);
-      toast.error(error.data?.message || error.message || "Failed to generate certificate");
+      
+      // Handle specific error types
+      if (error?.status === 'FETCH_ERROR') {
+        toast.error("Network error. The certificate service may be down.");
+        setApiDown(true);
+      } else {
+        toast.error(error.data?.message || error.message || "Failed to generate certificate");
+      }
+    } finally {
+      setIsRetrying(false);
     }
   };
 
   const handleCopyLink = () => {
-    if (!certificate?.id) {
-      toast.error('Certificate not found');
+    // Get certificate ID - either from API or fallback
+    const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
+    
+    if (!certId) {
+      toast.error('Certificate ID not available');
       return;
     }
     
-    const url = `${window.location.origin}/verify-certificate/${certificate.id}`;
+    const url = `${window.location.origin}/verify-certificate/${certId}`;
     navigator.clipboard.writeText(url)
       .then(() => toast.success('Certificate link copied to clipboard'))
       .catch(() => toast.error('Failed to copy link'));
   };
 
   const handleShareToLinkedIn = () => {
-    if (!certificate?.id) {
-      toast.error('Certificate not found');
+    // Get certificate ID and course name - either from API or fallback
+    const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
+    const courseName = certificate?.course || (apiDown && fallbackCertificates[courseId]?.course) || "Course";
+    
+    if (!certId) {
+      toast.error('Certificate ID not available');
       return;
     }
 
-    const certificateUrl = `${window.location.origin}/verify-certificate/${certificate.id}`;
-    const title = `${certificate.course} - Course Completion Certificate`;
-    const summary = `I've successfully completed the ${certificate.course} course on EduFlow Learning Platform`;
+    const certificateUrl = `${window.location.origin}/verify-certificate/${certId}`;
+    const title = `${courseName} - Course Completion Certificate`;
+    const summary = `I've successfully completed the ${courseName} course on EduFlow Learning Platform`;
     
     const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certificateUrl)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}`;
     
@@ -82,8 +126,11 @@ const Certificate = () => {
 
   // Direct download function
   const handleDownload = () => {
-    if (!certificate?.id) {
-      toast.error('Certificate not found');
+    // Get certificate ID - either from API or fallback
+    const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
+    
+    if (!certId) {
+      toast.error('Certificate not available');
       return;
     }
     
@@ -94,23 +141,47 @@ const Certificate = () => {
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
       
-      // Always use the direct URL from the server
-      const directFileUrl = `${import.meta.env.VITE_API_URL}/certificates/file/${certificate.id}?t=${timestamp}`;
+      // Use either production or local URL based on what's working
+      let certificateUrl;
       
-      console.log("Downloading certificate from:", directFileUrl);
+      // Use API_URL from environment or a fallback
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1';
+      const localBaseUrl = 'http://localhost:3000/api/v1';
+      
+      // First try the configured API URL
+      certificateUrl = `${apiBaseUrl}/certificates/file/${certId}?t=${timestamp}`;
+      
+      // Log for debugging
+      console.log("Downloading certificate from:", certificateUrl);
       
       // Open in a new tab
-      window.open(directFileUrl, '_blank');
+      window.open(certificateUrl, '_blank');
       
       setTimeout(() => {
         setIsDownloading(false);
         toast.success("Certificate download initiated");
+        
+        // If API is down, offer alternative options
+        if (apiDown) {
+          toast.info(
+            "If the download doesn't work, try our local server at: " + 
+            `${localBaseUrl}/certificates/file/${certId}`
+          );
+        }
       }, 1000);
     } catch (error) {
       console.error("Download failed:", error);
       setIsDownloading(false);
       toast.error("Download failed. Please try again later.");
     }
+  };
+  
+  // API retry handler
+  const handleRetryApi = () => {
+    setApiDown(false);
+    setRetryCount(0);
+    refetch();
+    toast.info("Retrying API connection...");
   };
   
   // If no courseId is provided, show message
@@ -134,8 +205,8 @@ const Certificate = () => {
     );
   }
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state if not in API down state
+  if (isLoading && !apiDown) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <Card>
@@ -153,6 +224,10 @@ const Certificate = () => {
     );
   }
   
+  // Get certificate and course info - from API or fallback if API is down
+  const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
+  const courseName = certificate?.course || (apiDown && fallbackCertificates[courseId]?.course) || "Course";
+  
   return (
     <div className="container max-w-4xl mx-auto py-12 px-4">
       <Card className="border-2 border-green-100 dark:border-green-900">
@@ -166,6 +241,37 @@ const Certificate = () => {
           <CardDescription className="text-green-600 dark:text-green-400">
             You have successfully completed the course and earned your certificate.
           </CardDescription>
+          
+          {apiDown && (
+            <div className="mt-4 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-medium">API Connection Issue</span>
+              </div>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                The certificate service appears to be offline. Using backup information.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:hover:bg-yellow-900/75 border-yellow-200 dark:border-yellow-800"
+                onClick={handleRetryApi}
+                disabled={isRetrying}
+              >
+                {isRetrying ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-2" />
+                    Retry Connection
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardHeader>
         
         <CardContent className="py-6">
@@ -175,12 +281,12 @@ const Certificate = () => {
             <p className="text-lg mb-2">This certifies that</p>
             <p className="text-2xl font-bold mb-2">{user?.name}</p>
             <p className="mb-4">has successfully completed the course</p>
-            <p className="text-xl font-bold mb-6">{certificate?.course || "Course"}</p>
+            <p className="text-xl font-bold mb-6">{courseName}</p>
             <div className="flex justify-center mb-4">
               <div className="h-px w-32 bg-gray-300 dark:bg-gray-600"></div>
             </div>
             <p className="text-sm">Date: {certificate?.issuedDate ? new Date(certificate.issuedDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
-            <p className="text-sm mt-2">Certificate ID: {certificate?.id || "Pending"}</p>
+            <p className="text-sm mt-2">Certificate ID: {certId || "Unavailable"}</p>
           </div>
           
           <div className="space-y-4 mt-6">
@@ -193,7 +299,7 @@ const Certificate = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">Course</p>
-                  <p className="font-medium">{certificate?.course || "Course"}</p>
+                  <p className="font-medium">{courseName}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Issue Date</p>
@@ -201,7 +307,7 @@ const Certificate = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">Certificate ID</p>
-                  <p className="font-medium">{certificate?.id || "Pending"}</p>
+                  <p className="font-medium">{certId || "Unavailable"}</p>
                 </div>
               </div>
             </div>
@@ -215,11 +321,22 @@ const Certificate = () => {
                 Share your certificate with others or add it to your LinkedIn profile to showcase your new skills.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyLink} className="flex items-center gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCopyLink} 
+                  className="flex items-center gap-1"
+                  disabled={!certId}
+                >
                   <Copy className="h-3.5 w-3.5" />
                   Copy Link
                 </Button>
-                <Button size="sm" onClick={handleShareToLinkedIn} className="flex items-center gap-1">
+                <Button 
+                  size="sm" 
+                  onClick={handleShareToLinkedIn} 
+                  className="flex items-center gap-1"
+                  disabled={!certId}
+                >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Add to LinkedIn
                 </Button>
@@ -232,7 +349,7 @@ const Certificate = () => {
           <Button 
             onClick={handleDownload} 
             className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-            disabled={isDownloading || !certificate?.id}
+            disabled={isDownloading || !certId}
           >
             {isDownloading ? (
               <>
@@ -247,10 +364,10 @@ const Certificate = () => {
             )}
           </Button>
           <Button 
-            onClick={() => certificate?.id && window.open(`${import.meta.env.VITE_API_URL}/certificates/file/${certificate.id}`, '_blank')} 
+            onClick={() => certId && window.open(`${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}`, '_blank')} 
             variant="outline" 
             className="flex-1 flex items-center justify-center gap-2"
-            disabled={!certificate?.id}
+            disabled={!certId}
           >
             <ExternalLink className="h-4 w-4" />
             View Certificate
