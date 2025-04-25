@@ -27,6 +27,29 @@ export const purchaseApi = createApi({
         url: `/course/${courseId}/detail-with-status`,
         method: "GET",
       }),
+      async onQueryStarted(courseId, { dispatch, queryFulfilled }) {
+        try {
+          console.log(`Fetching course details for ID: ${courseId}`);
+          console.log(`API URL being used: ${COURSE_PURCHASE_API}/course/${courseId}/detail-with-status`);
+          const response = await queryFulfilled;
+          console.log("Course details fetched successfully:", response.data);
+        } catch (error) {
+          console.error(`Error fetching course details for ID ${courseId}:`, error);
+          console.error("Error details:", {
+            status: error?.error?.status,
+            data: error?.error?.data,
+            message: error?.error?.message || "Unknown error"
+          });
+        }
+      },
+      transformErrorResponse: (response) => {
+        console.error("Course details API error response:", response);
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch course details',
+          data: response.data
+        };
+      },
     }),
     getPurchasedCourses: builder.query({
       query: () => ({
@@ -39,6 +62,29 @@ export const purchaseApi = createApi({
         url: `/instructor-sales`,
         method: "GET",
       }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          console.log("Fetching instructor sales data");
+          console.log(`API URL being used: ${COURSE_PURCHASE_API}/instructor-sales`);
+          const response = await queryFulfilled;
+          console.log("Instructor sales data fetched successfully:", response.data);
+        } catch (error) {
+          console.error("Error fetching instructor sales data:", error);
+          console.error("Error details:", {
+            status: error?.error?.status,
+            data: error?.error?.data,
+            message: error?.error?.message || "Unknown error"
+          });
+        }
+      },
+      transformErrorResponse: (response) => {
+        console.error("Instructor sales API error response:", response);
+        return {
+          status: response.status,
+          message: response.data?.message || 'Failed to fetch sales data',
+          data: response.data
+        };
+      },
     }),
   }),
 });

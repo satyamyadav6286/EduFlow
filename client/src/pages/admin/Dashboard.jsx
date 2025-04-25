@@ -1,13 +1,38 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useGetInstructorSalesQuery } from "@/features/api/purchaseApi";
-import React from "react";
+import React, { useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { COURSE_PURCHASE_API } from "@/config/apiConfig";
 
 const Dashboard = () => {
-  const {data, isSuccess, isError, isLoading} = useGetInstructorSalesQuery();
+  const {data, isSuccess, isError, error, isLoading, refetch} = useGetInstructorSalesQuery();
 
-  if(isLoading) return <h1>Loading...</h1>
-  if(isError) return <h1 className="text-red-500">Failed to get sales data</h1>
+  useEffect(() => {
+    if (isError) {
+      console.error("Dashboard error:", error);
+      console.error("Error details:", {
+        status: error?.status,
+        message: error?.message || "Unknown error",
+        data: error?.data
+      });
+    }
+  }, [isError, error]);
+  
+  if(isLoading) return (
+    <div className="flex justify-center items-center p-12">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+  
+  if(isError) return (
+    <div className="flex flex-col items-center justify-center p-12">
+      <h1 className="text-red-500 text-xl mb-4">Failed to get sales data</h1>
+      <p className="text-gray-500 mb-2">Error: {error?.message || "Unknown error"}</p>
+      <p className="text-gray-500 mb-4">API URL: {COURSE_PURCHASE_API}/instructor-sales</p>
+      <Button onClick={() => refetch()}>Retry</Button>
+    </div>
+  );
 
   // Add safe handling for missing data
   const purchasedCourse = data?.purchasedCourse || [];

@@ -14,15 +14,27 @@ import { Separator } from "@/components/ui/separator";
 import MediaDisplay from "@/components/MediaDisplay";
 import { useGetCourseDetailWithStatusQuery } from "@/features/api/purchaseApi";
 import { BadgeInfo, Lock, PlayCircle } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { COURSE_PURCHASE_API } from "@/config/apiConfig";
 
 const CourseDetail = () => {
   const params = useParams();
   const courseId = params.courseId;
   const navigate = useNavigate();
-  const { data, isLoading, isError } =
+  const { data, isLoading, isError, error, refetch } =
     useGetCourseDetailWithStatusQuery(courseId);
+
+  useEffect(() => {
+    if (isError) {
+      console.error("Course detail error:", error);
+      console.error("Error details:", {
+        status: error?.status,
+        message: error?.message || "Unknown error",
+        data: error?.data
+      });
+    }
+  }, [isError, error]);
 
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-screen">
@@ -31,10 +43,12 @@ const CourseDetail = () => {
   );
   
   if (isError) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="text-center">
-        <p className="text-xl font-semibold text-red-500">Failed to load course details</p>
-        <p className="text-gray-500">Please try refreshing the page</p>
+    <div className="flex flex-col justify-center items-center min-h-screen">
+      <div className="text-center max-w-md">
+        <p className="text-xl font-semibold text-red-500 mb-4">Failed to load course details</p>
+        <p className="text-gray-500 mb-4">Error: {error?.message || "Unknown error"}</p>
+        <p className="text-gray-500 mb-4">API URL: {`${COURSE_PURCHASE_API}/course/${courseId}/detail-with-status`}</p>
+        <Button onClick={() => refetch()}>Try Again</Button>
       </div>
     </div>
   );
