@@ -174,7 +174,7 @@ export const generateCertificate = async (userId, courseId) => {
     doc.rect(35, 35, pageWidth - 70, pageHeight - 70)
        .lineWidth(3)
        .strokeColor('#1e40af')
-       .dash(0)
+       .undash()
        .stroke();
     
     // Inner border
