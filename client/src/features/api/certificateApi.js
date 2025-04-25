@@ -13,13 +13,13 @@ export const certificateApi = createApi({
   endpoints: (builder) => ({
     getCertificate: builder.query({
       query: (courseId) => ({
-        url: `/course/${courseId}`,
+        url: `/${courseId}`,
         method: "GET",
       }),
     }),
     generateCertificate: builder.mutation({
       query: (courseId) => ({
-        url: `/course/${courseId}/generate`,
+        url: `/${courseId}/generate`,
         method: "POST",
       }),
     }),
