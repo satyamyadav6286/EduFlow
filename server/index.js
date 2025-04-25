@@ -33,7 +33,14 @@ app.use(cookieParser());
 
 // Configure CORS to allow requests from client and Cloudinary
 app.use(cors({
-    origin: ["http://localhost:5173", "https://res.cloudinary.com"],
+    origin: [
+      "http://localhost:5173", 
+      "https://res.cloudinary.com", 
+      // Add Vercel domains
+      "https://eduflow-web.vercel.app", 
+      "https://eduflow-git-main.vercel.app", 
+      "https://eduflow.vercel.app"
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"]

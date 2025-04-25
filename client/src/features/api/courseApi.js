@@ -57,14 +57,30 @@ export const courseApi = createApi({
         url: "/published-courses",
         method: "GET",
       }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          console.log("Starting API request to fetch published courses");
+          const response = await queryFulfilled;
+          console.log("Published courses API response:", response.data);
+        } catch (error) {
+          console.error("Error fetching published courses:", error);
+          console.error("Error details:", {
+            status: error?.error?.status,
+            data: error?.error?.data,
+            message: error?.error?.message || "Unknown error"
+          });
+        }
+      },
       // Handle error and empty responses
       transformErrorResponse: (response) => {
+        console.error("Published courses API error response:", response);
         return {
           status: response.status,
           message: response.data?.message || 'Failed to fetch published courses'
         };
       },
       transformResponse: (response) => {
+        console.log("Transforming published courses response:", response);
         if (!response) return { courses: [] };
         return response;
       }

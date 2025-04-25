@@ -2,6 +2,9 @@
 // Gets the API base URL from environment variables or falls back to the localhost URL
 const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/v1`;
 
+// Log the API URL for debugging
+console.log("API Base URL:", API_BASE_URL);
+
 // API endpoints
 export const USER_API = `${API_BASE_URL}/user`;
 export const COURSE_API = `${API_BASE_URL}/course`;
