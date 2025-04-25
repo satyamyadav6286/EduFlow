@@ -9,6 +9,7 @@
 
 <div align="center">
   <p><strong>Modern frontend for the EduFlow learning platform</strong></p>
+  <p>Version: 1.3.0</p>
 </div>
 
 ---
@@ -31,6 +32,7 @@ The EduFlow client is a responsive, feature-rich React application powering the 
 - **Analytics Dashboard** - Comprehensive statistics and insights
 - **Student Management** - Monitor learner engagement and performance
 - **Content Management** - Organize videos, quizzes, and materials
+- **Signature Management** - Upload and manage your digital signature for certificates
 
 ### Platform Features
 - **Verification Portal** - Public verification for certificates and scorecards
@@ -38,6 +40,7 @@ The EduFlow client is a responsive, feature-rich React application powering the 
 - **Accessibility** - WCAG-compliant components from shadcn/ui
 - **Dark/Light Mode** - Theme support for user preference
 - **Token Management** - Secure authentication with automatic refresh
+- **Reliable Document Downloads** - Enhanced certificate retrieval system with fallbacks
 
 ## 🛠️ Technology Stack
 
@@ -122,6 +125,21 @@ src/
 
 ## ✅ Recent Improvements
 
+### Version 1.3.0
+
+#### Certificate System Enhancements
+- **Streamlined Certificate UI** - Simplified certificate viewing and download interface
+- **Enhanced Download Experience** - Improved certificate download reliability with fallback mechanisms
+- **Improved Error Handling** - Better feedback when certificate operations fail
+- **API Endpoint Consistency** - Updated endpoints to match server-side routes
+
+#### UI Improvements
+- **Simplified Certificate Interface** - Removed redundant certificate buttons and streamlined the user flow
+- **Better Error Recovery** - Added alternative download paths when primary methods fail
+- **Progress Indicators** - Improved loading states for certificate operations
+- **Responsive Design Enhancements** - Better mobile experience for certificate viewing
+
+### Previous Improvements
 - **Certificate Verification** - Public verification portal for course certificates
 - **Quiz Scorecard System** - Detailed performance metrics and PDF generation
 - **Token Management** - Improved authentication with automatic refresh
@@ -138,7 +156,7 @@ Secure JWT-based authentication with automatic token refresh, protected routes, 
 Advanced video player with progress tracking, note-taking, and seamless navigation between lectures.
 
 ### Certificate System
-Generates verifiable certificates upon course completion with public verification portal.
+Generates verifiable certificates upon course completion with public verification portal and reliable download mechanisms.
 
 ### Quiz Engine
 Interactive quiz interface with multiple question types, timed assessments, and detailed scorecards.

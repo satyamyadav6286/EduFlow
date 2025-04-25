@@ -9,6 +9,7 @@
 
 <div align="center">
   <p><strong>Robust backend for the EduFlow learning platform</strong></p>
+  <p>Version: 1.3.0</p>
 </div>
 
 ---
@@ -30,12 +31,15 @@ The EduFlow Server is a powerful, scalable backend built with Node.js and Expres
 - **Media Handling** - Secure video and document storage with Cloudinary
 - **Interactive Quizzes** - Assessment creation and submission processing
 - **Progress Tracking** - Student advancement monitoring
+- **Automatic Certificate Generation** - Certificates created on course completion
 
 ### Certificate System
 - **Dynamic Certificate Generation** - PDF certificates with unique IDs
 - **Public Verification API** - Certificate validation without authentication
 - **Quiz Scorecards** - Detailed performance PDFs with verification
 - **Secure Downloads** - Token-independent document retrieval
+- **File System Management** - Robust directory permissions and error recovery
+- **Instructor Signatures** - Digital signatures on generated certificates
 
 ### Payment Integration
 - **Razorpay Integration** - Secure payment processing
@@ -112,10 +116,18 @@ SERVER_BASE_URL=http://localhost:3000
 ### Development Server
 
 ```bash
+# Start main API server
 npm run dev
+
+# Start certificate server (separate terminal)
+# For PowerShell:
+./start-certificate-server.ps1
+
+# For bash/other shells:
+node direct-certificate-server.js
 ```
 
-This will start the development server with nodemon at `http://localhost:3000`
+The main server will run at `http://localhost:3000` and the certificate server at `http://localhost:3500`
 
 ### Production Build
 
@@ -151,11 +163,16 @@ server/
 │   ├── errorResponse.js       # Error formatting
 │   ├── certificateGenerator.js # PDF generation
 │   └── ...
+├── tools/                 # Utility scripts
+│   ├── regenerate-certificate.js # Certificate repair tool
+│   ├── fix-specific-certificate.js # Issue-specific fixes
+│   └── ...
 ├── database/              # Database connection
 ├── uploads/               # Temporary file storage
 ├── certificates/          # Generated certificates
 ├── quiz-results/          # Quiz scorecard PDFs
 ├── config/                # Configuration files
+├── start-certificate-server.ps1 # PowerShell script for certificate server
 └── index.js               # Server entry point
 ```
 
@@ -181,47 +198,52 @@ server/
 | PUT | `/api/v1/course/:id` | Update course | Yes (Owner) |
 | DELETE | `/api/v1/course/:id` | Delete course | Yes (Owner) |
 
-### Lectures
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|--------------|
-| GET | `/api/v1/course/:courseId/lecture` | Get all lectures | Yes (Enrolled) |
-| POST | `/api/v1/course/:courseId/lecture` | Create lecture | Yes (Owner) |
-| PUT | `/api/v1/lecture/:id` | Update lecture | Yes (Owner) |
-| DELETE | `/api/v1/lecture/:id` | Delete lecture | Yes (Owner) |
-
-### Quizzes
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|--------------|
-| POST | `/api/v1/quiz` | Create quiz | Yes (Instructor) |
-| GET | `/api/v1/quiz/course/:courseId` | Get course quizzes | Yes (Enrolled) |
-| POST | `/api/v1/quiz/submit` | Submit quiz attempt | Yes |
-| GET | `/api/v1/quiz/results/:courseId` | Get quiz results | Yes |
-
 ### Certificates
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|--------------|
-| POST | `/api/v1/certificate/generate` | Generate certificate | Yes |
-| GET | `/api/v1/certificate/:certificateId/download` | Download certificate | No |
-| GET | `/api/v1/certificate/verify/:certificateId` | Verify certificate | No |
+| GET | `/api/v1/certificates/:courseId` | Get certificate info | Yes |
+| POST | `/api/v1/certificates/:courseId/generate` | Generate certificate | Yes |
+| GET | `/api/v1/certificates/file/:certificateId` | Download certificate | No |
+| GET | `/api/v1/certificates/:certificateId/verify` | Verify certificate | No |
 
-### Quiz Scorecards
+### Course Progress
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|--------------|
-| GET | `/api/v1/quiz/scorecard/:resultId/download` | Download scorecard | No |
-| GET | `/api/v1/quiz/scorecard/:resultId/verify` | Verify scorecard | No |
+| GET | `/api/v1/progress/:courseId` | Get progress | Yes |
+| POST | `/api/v1/progress/:courseId/complete` | Mark as complete | Yes |
+| POST | `/api/v1/progress/:courseId/incomplete` | Mark as incomplete | Yes |
+| POST | `/api/v1/progress/:courseId/lecture/:lectureId/view` | Mark lecture as viewed | Yes |
+
+### User Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|--------------|
+| POST | `/api/v1/user/signature/update` | Upload instructor signature | Yes (Instructor) |
+| GET | `/api/v1/user/instructors` | Get all instructors | No |
+| GET | `/api/v1/user/me` | Get current user details | Yes |
 
 ## ✅ Recent Improvements
 
-- **Public Certificate Verification** - Authentication-free verification endpoints
-- **Quiz Scorecard Generation** - PDF generation with verification IDs
-- **Token Management** - Improved authentication with refresh tokens
-- **Download Security** - Enhanced document retrieval system
-- **Error Handling** - Comprehensive error management and logging
-- **Documentation** - Expanded API documentation
+### Version 1.3.0
+
+#### Certificate System Enhancements
+- **Automatic Certificate Generation** - Certificates now automatically generate when marking a course as complete
+- **Certificate Regeneration Tool** - Added utility to regenerate missing certificate files
+- **Improved File Permissions** - Fixed directory and file permission issues for certificate storage
+- **Fixed PDF Generation** - Resolved issues with certificate creation and delivery
+- **PowerShell Support** - Added dedicated script for Windows PowerShell users
+
+#### API Enhancements
+- **Enhanced Course Progress API** - Added certificate information to course progress response
+- **Improved Error Handling** - Better error recovery for certificate operations
+- **Certificate Download Reliability** - More robust file streaming and error handling
+
+#### Under the Hood
+- **File System Management** - Improved handling of certificate directory and file permissions
+- **Certificate File Recovery** - Added tools to fix specific certificate issues
+- **Cross-Platform Compatibility** - Better support for Windows environments
 
 ## 🔒 Security Features
 
@@ -231,12 +253,14 @@ server/
 - **Rate Limiting** - Prevention of brute force attacks
 - **Input Validation** - Request validation and sanitization
 - **Error Sanitization** - Production-safe error messages
+- **Directory Permission Management** - Secure file system operations
 
 ## 📚 Available Scripts
 
 - `npm run dev` - Start development server with nodemon
 - `npm start` - Start production server
-- `npm run seed` - Populate database with sample data
+- `node tools/regenerate-certificate.js` - Regenerate all certificates
+- `./start-certificate-server.ps1` - Start certificate server (PowerShell)
 - `npm run lint` - Run ESLint for code quality
 
 ## 🤝 Contributing

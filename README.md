@@ -1,7 +1,7 @@
 # EduFlow - Modern Learning Management System
 
 <div align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/version-1.3.0-blue?style=for-the-badge" alt="Version 1.3.0">
   <img src="https://img.shields.io/badge/license-MIT-success?style=for-the-badge" alt="License MIT">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
 </div>
@@ -48,6 +48,7 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
 - **Quiz Creator** - Build assessments with various question types
 - **Student Management** - Track progress, engagement, and completion rates
 - **Revenue Analytics** - Comprehensive sales and conversion metrics
+- **Digital Signature** - Upload and use your signature on course certificates
 
 ### For Students
 
@@ -65,6 +66,7 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
 - **Responsive Design** - Optimized for mobile, tablet, and desktop
 - **Payment Integration** - Secure checkout with Razorpay
 - **Cloud Media Delivery** - Fast content streaming with Cloudinary CDN
+- **Automatic Certificate Generation** - Certificates created automatically on course completion
 
 ## 🛠️ Technology Stack
 
@@ -105,6 +107,8 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
     ├── routes/             # API endpoints
     ├── middlewares/        # Express middlewares
     ├── utils/              # Helper functions
+    ├── tools/              # Utility scripts
+    ├── certificates/       # Generated certificate PDFs
     └── ...
 ```
 
@@ -139,6 +143,7 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
    cd client
    npm install
    
+   # Create .env file (see client/.env.example for required variables)
    # Start development server
    npm run dev
    ```
@@ -147,7 +152,13 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000/api/v1
 
-> 📝 **Note:** PowerShell users should run commands separately since PowerShell doesn't support the '&&' operator for command chaining.
+5. **Certificate Server (Windows PowerShell)**
+   ```powershell
+   # From the server directory
+   ./start-certificate-server.ps1
+   ```
+
+> 📝 **Note:** PowerShell users should use the provided script files for command execution or run commands separately, as PowerShell doesn't support the '&&' operator for command chaining.
 
 ## 💻 Usage Guide
 
@@ -158,6 +169,7 @@ EduFlow is a comprehensive Learning Management System designed for creating, man
    - Upload videos and learning materials
    - Create interactive quizzes and assessments
    - Set pricing and publish to the marketplace
+   - Upload your signature for certificates
 
 2. **Monitor Performance**
    - Track enrollment metrics
@@ -202,6 +214,24 @@ Our RESTful API is organized by resource:
 
 ## 🆕 Recent Updates
 
+### Version 1.3.0
+
+#### Certificate System Enhancements
+- **Automatic Certificate Generation** - Certificates now automatically generate when a course is marked as complete
+- **Fixed PDF Generation** - Resolved issues with certificate PDF creation and permissions
+- **Improved Certificate Downloads** - Enhanced reliability of certificate file delivery
+- **PowerShell Support** - Added dedicated scripts for Windows PowerShell users
+
+#### UI Improvements
+- **Streamlined Certificate Interface** - Simplified certificate viewing and download options
+- **Enhanced Error Handling** - Better feedback when certificate operations encounter issues
+- **Consistent API Access** - Updated client endpoints to match server routes
+
+#### Under the Hood
+- **File Permission Management** - Improved directory and file permission handling for certificates
+- **Error Recovery** - Added automatic regeneration capabilities for missing certificate files
+- **Cross-Platform Compatibility** - Better support for Windows environments
+
 ### Version 1.2.0
 
 #### UI Improvements
@@ -216,12 +246,6 @@ Our RESTful API is organized by resource:
 - **Certificate Display Issues** - Fixed rendering problems with certificates and scorecard downloads
 - **Media Loading Optimization** - Improved video loading with metadata preloading
 - **Course Content Navigation** - Enhanced sidebar selection states and completion indicators
-
-#### Under the Hood
-- **Redux State Management** - Added courseSlice for better client-side data handling
-- **Race Condition Prevention** - Added safeguards against state conflicts during API calls
-- **Error Handling** - Improved error feedback and recovery mechanisms
-- **Admin Seed Script** - Added utility to create instructor accounts
 
 ## 🔮 Future Roadmap
 
