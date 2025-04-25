@@ -14,6 +14,7 @@ import quizRoute from "./routes/quiz.route.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import fs from "fs";
 
 // Get directory name for ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -54,7 +55,17 @@ app.use(cors({
 const uploadsDir = path.join(__dirname, 'uploads');
 console.log('Uploads directory:', uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
-app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
+
+// Ensure certificates directory exists
+const certificatesDir = path.join(__dirname, 'certificates');
+if (!fs.existsSync(certificatesDir)) {
+  console.log(`Creating certificates directory: ${certificatesDir}`);
+  fs.mkdirSync(certificatesDir, { recursive: true });
+} else {
+  console.log(`Certificates directory exists: ${certificatesDir}`);
+}
+console.log('Certificates directory:', certificatesDir);
+app.use('/certificates', express.static(certificatesDir));
 
 // apis
 app.use("/api/v1/media", mediaRoute);

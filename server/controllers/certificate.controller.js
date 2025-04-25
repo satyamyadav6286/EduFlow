@@ -246,28 +246,42 @@ export const downloadCertificate = async (req, res) => {
     // Find the certificate without authentication check
     const certificate = await Certificate.findOne({ certificateId });
     if (!certificate) {
-      console.log(`Certificate not found: ${certificateId}`);
+      console.log(`Certificate not found in database: ${certificateId}`);
       return res.status(404).json({
         success: false,
         message: "Certificate not found",
       });
     }
-
+    
+    // Get absolute path to certificates directory
+    const certificateDir = path.resolve(__dirname, "../certificates");
+    console.log(`Certificate directory: ${certificateDir}`);
+    
+    // Ensure certificate directory exists
+    if (!fs.existsSync(certificateDir)) {
+      console.log(`Creating certificate directory: ${certificateDir}`);
+      fs.mkdirSync(certificateDir, { recursive: true });
+    }
+    
     // Get the file path 
-    const pdfPath = path.resolve(__dirname, "../certificates", `${certificateId}.pdf`);
+    const pdfPath = path.resolve(certificateDir, `${certificateId}.pdf`);
     console.log(`Attempting to download certificate from: ${pdfPath}`);
     
     // Check if file exists
     if (!fs.existsSync(pdfPath)) {
-      console.log(`Certificate file not found: ${pdfPath}`);
+      console.log(`Certificate file not found at path: ${pdfPath}`);
       
       // Try to regenerate certificate
       try {
         console.log(`Attempting to regenerate certificate: ${certificateId}`);
+        console.log(`Using userId: ${certificate.userId}, courseId: ${certificate.courseId}`);
+        
         const result = await generateCertificatePDF(certificate.userId, certificate.courseId);
+        console.log(`Certificate regeneration result:`, result);
         
         // Check if regeneration worked
         if (!fs.existsSync(pdfPath)) {
+          console.log(`Certificate regeneration failed to create file at: ${pdfPath}`);
           return res.status(404).json({
             success: false,
             message: "Certificate file not found and regeneration failed. Please try again.",
@@ -278,6 +292,7 @@ export const downloadCertificate = async (req, res) => {
         if (certificate.pdfPath !== result.pdfUrl) {
           certificate.pdfPath = result.pdfUrl;
           await certificate.save();
+          console.log(`Updated certificate record with new path: ${result.pdfUrl}`);
         }
         
         console.log("Certificate regenerated successfully");
@@ -301,9 +316,8 @@ export const downloadCertificate = async (req, res) => {
 
     // Stream the file
     const fileStream = fs.createReadStream(pdfPath);
-    fileStream.pipe(res);
-
-    // Handle stream errors
+    
+    // Handle stream errors before piping
     fileStream.on("error", (err) => {
       console.error(`Error streaming certificate file: ${err.message}`);
       if (!res.headersSent) {
@@ -313,6 +327,9 @@ export const downloadCertificate = async (req, res) => {
         });
       }
     });
+    
+    // Pipe the file stream to the response
+    fileStream.pipe(res);
   } catch (error) {
     console.error("Certificate download error:", error);
     return res.status(500).json({

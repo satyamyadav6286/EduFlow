@@ -18,16 +18,30 @@ export const generateCertificate = async (userId, courseId) => {
     const course = await Course.findById(courseId);
     
     if (!user || !course) {
-      throw new Error("User or course not found");
+      throw new Error(`User or course not found - userId: ${userId}, courseId: ${courseId}`);
     }
     
     // Generate a unique certificate code (16 characters)
     const certificateId = crypto.randomBytes(8).toString("hex").toUpperCase();
     
-    // Create certificates directory if it doesn't exist
+    // Create certificates directory if it doesn't exist (using absolute path)
     const certificateDir = path.resolve(__dirname, "../certificates");
+    console.log(`Certificates directory path: ${certificateDir}`);
+    
     if (!fs.existsSync(certificateDir)) {
+      console.log(`Creating certificates directory: ${certificateDir}`);
       fs.mkdirSync(certificateDir, { recursive: true });
+    } else {
+      console.log(`Certificates directory already exists: ${certificateDir}`);
+    }
+    
+    // Check if directory is accessible
+    try {
+      fs.accessSync(certificateDir, fs.constants.W_OK);
+      console.log(`Certificate directory is writable: ${certificateDir}`);
+    } catch (accessError) {
+      console.error(`Certificate directory is not writable: ${certificateDir}`, accessError);
+      throw new Error(`Certificate directory is not writable: ${accessError.message}`);
     }
     
     // Create PDF file path - using original filename pattern to maintain compatibility
@@ -228,15 +242,24 @@ export const generateCertificate = async (userId, courseId) => {
     return new Promise((resolve, reject) => {
       stream.on('finish', () => {
         try {
-          // Create public URL for the certificate
-          const certificateUrl = `/certificates/${pdfFileName}`;
-          
-          // Return the certificate details without creating a DB record
-          resolve({
-            certificateId,
-            pdfPath: pdfPath,
-            pdfUrl: certificateUrl
-          });
+          // Verify the file was created
+          if (fs.existsSync(pdfPath)) {
+            console.log(`Certificate file created successfully at: ${pdfPath}`);
+            
+            // Create public URL for the certificate (relative path)
+            const certificateUrl = `/certificates/${pdfFileName}`;
+            
+            // Return the certificate details without creating a DB record
+            resolve({
+              certificateId,
+              pdfPath: pdfPath,
+              pdfUrl: certificateUrl
+            });
+          } else {
+            const error = new Error(`Certificate file was not created at: ${pdfPath}`);
+            console.error(error);
+            reject(error);
+          }
         } catch (error) {
           console.error("Error finalizing certificate generation:", error);
           reject(error);
