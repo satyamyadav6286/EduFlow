@@ -104,7 +104,7 @@ const Certificate = () => {
       const uniqueId = Math.random().toString(36).substring(2, 10);
       
       // Create the download URL
-      const downloadUrl = `${serverBaseUrl}/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`;
+      const downloadUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`;
       
       // Create a hidden iframe for download
       const iframe = document.createElement('iframe');
@@ -272,7 +272,7 @@ const Certificate = () => {
             )}
           </Button>
           <Button 
-            onClick={() => window.open(`${serverBaseUrl}/api/v1/certificates/${certificate.id}/download`, '_blank')} 
+            onClick={() => window.open(`https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download`, '_blank')} 
             variant="outline" 
             className="flex-1 flex items-center justify-center gap-2"
           >
