@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { User } from "../models/user.model.js";
 import { Course } from "../models/course.model.js";
-import { Certificate } from "../models/certificate.model.js";
 import crypto from "crypto";
 
 // Get directory name for ES module
@@ -227,37 +226,31 @@ export const generateCertificate = async (userId, courseId) => {
     
     // Wait for the PDF to be created
     return new Promise((resolve, reject) => {
-      stream.on('finish', async () => {
+      stream.on('finish', () => {
         try {
           // Create public URL for the certificate
           const certificateUrl = `/certificates/${pdfFileName}`;
           
-          // Save certificate details to database
-          const certificate = await Certificate.create({
-            userId,
-            courseId,
-            certificateId,
-            issuedDate: date,
-            completionDate: date,
-            pdfPath: certificateUrl
-          });
-          
+          // Return the certificate details without creating a DB record
           resolve({
-            certificate,
             certificateId,
+            pdfPath: pdfPath,
             pdfUrl: certificateUrl
           });
         } catch (error) {
+          console.error("Error finalizing certificate generation:", error);
           reject(error);
         }
       });
       
+      // Handle errors during PDF creation
       stream.on('error', (error) => {
+        console.error("Error generating PDF:", error);
         reject(error);
       });
     });
   } catch (error) {
-    console.error("Error generating certificate:", error);
+    console.error("Certificate generation error:", error);
     throw error;
   }
 }; 
