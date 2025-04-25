@@ -30,6 +30,12 @@ export const certificateApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    verifyCertificate: builder.query({
+      query: (certificateId) => ({
+        url: `/verify/${certificateId}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -37,4 +43,5 @@ export const {
   useGetCertificateQuery,
   useGenerateCertificateMutation,
   useDownloadCertificateMutation,
+  useVerifyCertificateQuery,
 } = certificateApi; 
