@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useGenerateCertificateMutation, useGetCertificateQuery } from '@/features/api/certificateApi';
+import { useGenerateCertificateMutation, useGetCertificateQuery, useDownloadCertificateMutation } from '@/features/api/certificateApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Share2, Award, Copy, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -38,6 +38,7 @@ const Certificate = () => {
   
   // For API fallback
   const [generateCertificate] = useGenerateCertificateMutation();
+  const [downloadCertificate] = useDownloadCertificateMutation();
   const { 
     data: certificateData, 
     isLoading, 
@@ -133,12 +134,6 @@ const Certificate = () => {
 
   // Direct download function
   const handleDownload = () => {
-    // Special case for Python course
-    if (courseId === '67db3f15ff35889914dfc30b') {
-      downloadPythonCertificate();
-      return;
-    }
-    
     // Get certificate ID - either from API or fallback
     const certId = certificate?.id || (apiDown && fallbackCertificates[courseId]?.id);
     
@@ -154,51 +149,89 @@ const Certificate = () => {
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
       
-      // Use multiple potential URLs to try accessing the certificate
+      // Create URLs to try in order of preference
       const urls = [
-        // Direct certificate server URL for Python certificate (special case)
-        `http://localhost:3500/certificates/file/${certId}?t=${timestamp}`,
         // Primary API URL
-        `${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
+        // Direct certificate server (fallback)
+        `http://localhost:3500/certificates/file/${certId}?t=${timestamp}`,
         // Alternative path format
-        `https://eduflow-pvb3.onrender.com/certificates/${certId}?t=${timestamp}`,
-        // Local server path
-        `http://localhost:3000/certificates/${certId}?t=${timestamp}`
+        `http://localhost:3000/certificates/file/${certId}?t=${timestamp}`
       ];
       
       // Log for debugging
-      console.log("Trying to download certificate from multiple sources. First trying:", urls[0]);
+      console.log("Trying to download certificate from:", urls[0]);
       
-      // Open the first URL in a new tab
-      window.open(urls[0], '_blank');
-      
-      setTimeout(() => {
-        setIsDownloading(false);
-        toast.success("Certificate download initiated");
+      // Try to download using the downloadCertificate mutation if not in API down state
+      if (!apiDown) {
+        downloadCertificate(certId)
+          .unwrap()
+          .then(blob => {
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(blob);
+            
+            // Create a link element
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Certificate_${certId}.pdf`;
+            
+            // Append to the document and click
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            toast.success("Certificate downloaded successfully");
+            setIsDownloading(false);
+          })
+          .catch(error => {
+            console.error("Error downloading certificate:", error);
+            
+            // If the certificate API fails, fall back to direct URL
+            toast.info("Using alternative download method...");
+            window.open(urls[0], '_blank');
+            
+            // Show alternative links
+            showAlternativeLinks(urls);
+            setIsDownloading(false);
+          });
+      } else {
+        // Open the first URL in a new tab if we're in API down state
+        window.open(urls[0], '_blank');
         
-        // If the download might not work, show alternative options
-        toast("If the certificate doesn't load, try these alternative links:", {
-          description: (
-            <div className="mt-2 flex flex-col gap-2">
-              {urls.slice(1).map((url, index) => (
-                <button
-                  key={index}
-                  onClick={() => window.open(url, '_blank')}
-                  className="text-left text-xs text-blue-500 hover:text-blue-700 underline"
-                >
-                  Alternative Link {index + 1}
-                </button>
-              ))}
-            </div>
-          ),
-          duration: 10000,
-        });
-      }, 1000);
+        // Show alternative links
+        showAlternativeLinks(urls);
+        setIsDownloading(false);
+      }
     } catch (error) {
       console.error("Download failed:", error);
       setIsDownloading(false);
       toast.error("Download failed. Please try again later.");
     }
+  };
+  
+  // Helper function to show alternative download links
+  const showAlternativeLinks = (urls) => {
+    setTimeout(() => {
+      toast("If the certificate doesn't load, try these alternative links:", {
+        description: (
+          <div className="mt-2 flex flex-col gap-2">
+            {urls.slice(1).map((url, index) => (
+              <button
+                key={index}
+                onClick={() => window.open(url, '_blank')}
+                className="text-left text-xs text-blue-500 hover:text-blue-700 underline"
+              >
+                Alternative Link {index + 1}
+              </button>
+            ))}
+          </div>
+        ),
+        duration: 10000,
+      });
+    }, 1000);
   };
   
   // API retry handler

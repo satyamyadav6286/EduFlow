@@ -24,11 +24,26 @@ export const certificateApi = createApi({
       }),
     }),
     downloadCertificate: builder.mutation({
-      query: (certificateId) => ({
-        url: `/file/${certificateId}`,
-        method: "GET",
-        responseHandler: (response) => response.blob(),
-      }),
+      query: (certificateId) => {
+        console.log("Attempting to download certificate:", certificateId);
+        // Append timestamp to prevent caching
+        const timestamp = Date.now();
+        return {
+          url: `/file/${certificateId}?t=${timestamp}`,
+          method: "GET",
+          responseHandler: async (response) => {
+            if (!response.ok) {
+              throw new Error(`Server responded with ${response.status}`);
+            }
+            try {
+              return await response.blob();
+            } catch (error) {
+              console.error("Error processing certificate response:", error);
+              throw error;
+            }
+          },
+        };
+      },
     }),
     verifyCertificate: builder.query({
       query: (certificateId) => ({
