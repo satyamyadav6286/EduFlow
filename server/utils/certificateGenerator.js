@@ -13,6 +13,11 @@ const __dirname = dirname(__filename);
 
 export const generateCertificate = async (userId, courseId) => {
   try {
+    // Generate a unique certificate code (16 characters)
+    const certificateId = crypto.randomBytes(8).toString("hex").toUpperCase();
+    
+    console.log(`Generating certificate with ID ${certificateId} for user ${userId} and course ${courseId}`);
+    
     // Get user and course details
     const user = await User.findById(userId);
     const course = await Course.findById(courseId);
@@ -21,8 +26,7 @@ export const generateCertificate = async (userId, courseId) => {
       throw new Error(`User or course not found - userId: ${userId}, courseId: ${courseId}`);
     }
     
-    // Generate a unique certificate code (16 characters)
-    const certificateId = crypto.randomBytes(8).toString("hex").toUpperCase();
+    console.log(`Found user: ${user.name} and course: ${course.courseTitle}`);
     
     // Create certificates directory if it doesn't exist (using absolute path)
     const certificateDir = path.resolve(__dirname, "../certificates");
@@ -245,6 +249,8 @@ export const generateCertificate = async (userId, courseId) => {
           // Verify the file was created
           if (fs.existsSync(pdfPath)) {
             console.log(`Certificate file created successfully at: ${pdfPath}`);
+            const stats = fs.statSync(pdfPath);
+            console.log(`Certificate file size: ${stats.size} bytes`);
             
             // Create public URL for the certificate (relative path)
             const certificateUrl = `/certificates/${pdfFileName}`;
