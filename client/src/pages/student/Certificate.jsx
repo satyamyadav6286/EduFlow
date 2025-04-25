@@ -141,33 +141,45 @@ const Certificate = () => {
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
       
-      // Use either production or local URL based on what's working
-      let certificateUrl;
-      
-      // Use API_URL from environment or a fallback
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1';
-      const localBaseUrl = 'http://localhost:3000/api/v1';
-      
-      // First try the configured API URL
-      certificateUrl = `${apiBaseUrl}/certificates/file/${certId}?t=${timestamp}`;
+      // Use multiple potential URLs to try accessing the certificate
+      const urls = [
+        // Primary API URL
+        `${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
+        // Direct certificate server URL
+        `http://localhost:3500/certificates/${certId}?t=${timestamp}`,
+        // Alternative path format
+        `https://eduflow-pvb3.onrender.com/certificates/${certId}?t=${timestamp}`,
+        // Local server path
+        `http://localhost:3000/certificates/${certId}?t=${timestamp}`
+      ];
       
       // Log for debugging
-      console.log("Downloading certificate from:", certificateUrl);
+      console.log("Trying to download certificate from multiple sources. First trying:", urls[0]);
       
-      // Open in a new tab
-      window.open(certificateUrl, '_blank');
+      // Open the first URL in a new tab
+      window.open(urls[0], '_blank');
       
       setTimeout(() => {
         setIsDownloading(false);
         toast.success("Certificate download initiated");
         
-        // If API is down, offer alternative options
-        if (apiDown) {
-          toast.info(
-            "If the download doesn't work, try our local server at: " + 
-            `${localBaseUrl}/certificates/file/${certId}`
-          );
-        }
+        // If the download might not work, show alternative options
+        toast("If the certificate doesn't load, try these alternative links:", {
+          description: (
+            <div className="mt-2 flex flex-col gap-2">
+              {urls.slice(1).map((url, index) => (
+                <button
+                  key={index}
+                  onClick={() => window.open(url, '_blank')}
+                  className="text-left text-xs text-blue-500 hover:text-blue-700 underline"
+                >
+                  Alternative Link {index + 1}
+                </button>
+              ))}
+            </div>
+          ),
+          duration: 10000,
+        });
       }, 1000);
     } catch (error) {
       console.error("Download failed:", error);
@@ -182,6 +194,51 @@ const Certificate = () => {
     setRetryCount(0);
     refetch();
     toast.info("Retrying API connection...");
+  };
+  
+  // Handle view certificate
+  const handleViewCertificate = () => {
+    if (!certId) {
+      toast.error('Certificate not available');
+      return;
+    }
+    
+    const timestamp = Date.now();
+    
+    // Use multiple potential URLs to try accessing the certificate
+    const urls = [
+      // Primary API URL
+      `${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}?t=${timestamp}`,
+      // Direct certificate server URL
+      `http://localhost:3500/certificates/${certId}?t=${timestamp}`,
+      // Alternative path format
+      `https://eduflow-pvb3.onrender.com/certificates/${certId}?t=${timestamp}`,
+      // Local server path
+      `http://localhost:3000/certificates/${certId}?t=${timestamp}`
+    ];
+    
+    // Open the first URL
+    window.open(urls[0], '_blank');
+    
+    // Show alternative links if needed
+    if (apiDown) {
+      toast("If the certificate doesn't load, try these alternative links:", {
+        description: (
+          <div className="mt-2 flex flex-col gap-2">
+            {urls.slice(1).map((url, index) => (
+              <button
+                key={index}
+                onClick={() => window.open(url, '_blank')}
+                className="text-left text-xs text-blue-500 hover:text-blue-700 underline"
+              >
+                Alternative Link {index + 1}
+              </button>
+            ))}
+          </div>
+        ),
+        duration: 10000,
+      });
+    }
   };
   
   // If no courseId is provided, show message
@@ -364,7 +421,7 @@ const Certificate = () => {
             )}
           </Button>
           <Button 
-            onClick={() => certId && window.open(`${import.meta.env.VITE_API_URL || 'https://eduflow-pvb3.onrender.com/api/v1'}/certificates/file/${certId}`, '_blank')} 
+            onClick={handleViewCertificate} 
             variant="outline" 
             className="flex-1 flex items-center justify-center gap-2"
             disabled={!certId}
