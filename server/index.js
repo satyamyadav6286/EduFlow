@@ -79,15 +79,49 @@ app.use(cors({
 // Serve static certificate files
 const uploadsDir = path.join(__dirname, 'uploads');
 console.log('Uploads directory:', uploadsDir);
+if (!fs.existsSync(uploadsDir)) {
+  console.log(`Creating uploads directory: ${uploadsDir}`);
+  fs.mkdirSync(uploadsDir, { recursive: true, mode: 0o777 }); // Full permissions
+  // Set permissions explicitly as a separate step
+  try {
+    fs.chmodSync(uploadsDir, 0o777);
+    console.log(`Permissions set on uploads directory: ${uploadsDir}`);
+  } catch (permError) {
+    console.error(`Failed to set permissions on uploads directory: ${permError}`);
+  }
+} else {
+  console.log(`Uploads directory exists: ${uploadsDir}`);
+  // Update permissions on existing directory
+  try {
+    fs.chmodSync(uploadsDir, 0o777);
+    console.log(`Permissions updated on uploads directory: ${uploadsDir}`);
+  } catch (permError) {
+    console.error(`Failed to update permissions on uploads directory: ${permError}`);
+  }
+}
 app.use('/uploads', express.static(uploadsDir));
 
-// Ensure certificates directory exists
+// Ensure certificates directory exists with proper permissions
 const certificatesDir = path.join(__dirname, 'certificates');
 if (!fs.existsSync(certificatesDir)) {
   console.log(`Creating certificates directory: ${certificatesDir}`);
-  fs.mkdirSync(certificatesDir, { recursive: true });
+  fs.mkdirSync(certificatesDir, { recursive: true, mode: 0o777 }); // Full permissions
+  // Set permissions explicitly
+  try {
+    fs.chmodSync(certificatesDir, 0o777);
+    console.log(`Permissions set on certificates directory: ${certificatesDir}`);
+  } catch (permError) {
+    console.error(`Failed to set permissions on certificates directory: ${permError}`);
+  }
 } else {
   console.log(`Certificates directory exists: ${certificatesDir}`);
+  // Update permissions on existing directory
+  try {
+    fs.chmodSync(certificatesDir, 0o777);
+    console.log(`Permissions updated on certificates directory: ${certificatesDir}`);
+  } catch (permError) {
+    console.error(`Failed to update permissions on certificates directory: ${permError}`);
+  }
 }
 console.log('Certificates directory:', certificatesDir);
 app.use('/certificates', express.static(certificatesDir));
