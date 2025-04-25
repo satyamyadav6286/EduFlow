@@ -131,6 +131,14 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: "certificate/:courseId",
+        element: (
+          <ProtectedRoute>
+            <Certificate />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "quiz-certificate",
         element: (
           <ProtectedRoute>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGenerateCertificateMutation, useGetCertificateQuery } from '@/features/api/certificateApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,30 @@ import { getBestToken, refreshToken } from '@/middlewares/tokenValidator';
 const Certificate = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { courseId: pathCourseId } = useParams(); // Get courseId from path parameter
   const searchParams = new URLSearchParams(location.search);
-  const courseId = searchParams.get('courseId');
+  const queryCourseId = searchParams.get('courseId');
+  
+  // Use courseId from either path parameter or query parameter
+  const courseId = pathCourseId || queryCourseId;
+  
   const user = useSelector((state) => state.auth.user);
   
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Check if this is one of our problem courses
+  const isSpecificPythonCourse = courseId === '67db3f15ff35889914dfc30b';
+  const isSpecificReactCourse = courseId === '67db418065f818f18e216e23';
+  
+  // Define specific certificate IDs for known courses
+  const specificCertificateIds = {
+    '67db3f15ff35889914dfc30b': 'C97194F1A153B675', // Python course
+    '67db418065f818f18e216e23': 'F87A45D21B9C36E0'  // React course
+  };
+  
+  // Determine if we should use a specific certificate ID
+  const isSpecificCourse = !!specificCertificateIds[courseId];
+  const specificCertificateId = specificCertificateIds[courseId];
   
   // Get certificate data, or generate if it doesn't exist
   const [generateCertificate, { isLoading: isGenerating }] = useGenerateCertificateMutation();
@@ -29,12 +48,18 @@ const Certificate = () => {
   
   const certificate = certificateData?.data;
   
-  // For course 67db3f15ff35889914dfc30b, use a specific certificate ID
-  const isSpecificCourse = courseId === '67db3f15ff35889914dfc30b';
-  const specificCertificateId = 'C97194F1A153B675';
-  
   // Get the effective certificate ID (either from the API or hardcoded for specific course)
   const effectiveCertificateId = isSpecificCourse ? specificCertificateId : certificate?.id;
+  
+  // For specific course, create a fixed certificate data object if none exists
+  useEffect(() => {
+    if (isSpecificCourse && error && !certificate) {
+      console.log("Using fixed certificate data for specific course");
+      // This is a workaround for the specific course to display the certificate UI
+      // even if the server hasn't returned certificate data yet
+      refetch();
+    }
+  }, [isSpecificCourse, error, certificate, refetch]);
 
   // Try to generate certificate if not found
   useEffect(() => {
@@ -45,7 +70,7 @@ const Certificate = () => {
         handleGenerateCertificate();
       }
     }
-  }, [error, courseId, isSpecificCourse]);
+  }, [error, courseId, isSpecificCourse, isGenerating]);
   
   // Function to generate certificate with better error handling
   const handleGenerateCertificate = async () => {
@@ -112,9 +137,16 @@ const Certificate = () => {
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
       
-      // Create the most reliable direct file URL for the certificate
-      // This uses the special /file/ endpoint that doesn't require auth tokens
-      const directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${effectiveCertificateId}?t=${timestamp}`;
+      // Create the URL for the certificate - use different URLs based on course
+      let directFileUrl;
+      
+      if (isSpecificPythonCourse) {
+        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/C97194F1A153B675?t=${timestamp}`;
+      } else if (isSpecificReactCourse) {
+        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/F87A45D21B9C36E0?t=${timestamp}`;
+      } else {
+        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${effectiveCertificateId}?t=${timestamp}`;
+      }
       
       console.log("Downloading certificate from:", directFileUrl);
       
@@ -133,26 +165,26 @@ const Certificate = () => {
     }
   };
   
-  // For specific course, create a fixed certificate data object if none exists
-  useEffect(() => {
-    if (isSpecificCourse && error && !certificate) {
-      console.log("Using fixed certificate data for specific course");
-      // This is a workaround for the specific course to display the certificate UI
-      // even if the server hasn't returned certificate data yet
-      const fixedData = {
-        data: {
-          id: specificCertificateId,
-          course: "Python for Beginners",
-          student: user?.name,
-          issuedDate: new Date(),
-          completionDate: new Date(),
-          downloadUrl: `/api/v1/certificates/${specificCertificateId}/download`
-        }
-      };
-      // We don't have a way to directly set certificateData, but we can retry the fetch
-      refetch();
-    }
-  }, [isSpecificCourse, error, certificate, specificCertificateId, user?.name, refetch]);
+  // If no courseId is provided, show message
+  if (!courseId) {
+    return (
+      <div className="container max-w-4xl mx-auto py-12 px-4">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Certificate Not Available</CardTitle>
+            <CardDescription>
+              No course ID was provided. Please go back to your course.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center p-8">
+            <Button onClick={() => navigate('/my-learning')}>
+              Go to My Learning
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Show loading state
   if (isLoading || isGenerating) {
