@@ -269,3 +269,64 @@ export const refreshToken = async (req, res) => {
         });
     }
 }
+
+// Update instructor signature
+export const updateInstructorSignature = async (req, res) => {
+    try {
+        const userId = req.id;
+        const signatureFile = req.file;
+
+        // Check if user exists and is an instructor
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (user.role !== 'INSTRUCTOR' && user.role !== 'instructor') {
+            return res.status(403).json({
+                success: false,
+                message: "Only instructors can upload signature images"
+            });
+        }
+
+        // Delete old signature image if it exists
+        if (user.signatureImage) {
+            const publicId = user.signatureImage.split("/").pop().split(".")[0]; // extract public id
+            await deleteMediaFromCloudinary(publicId);
+        }
+
+        // Upload new signature image
+        if (!signatureFile) {
+            return res.status(400).json({
+                success: false,
+                message: "No signature image provided"
+            });
+        }
+
+        const cloudResponse = await uploadMedia(signatureFile.path);
+        const signatureImageUrl = cloudResponse.secure_url;
+
+        // Update user with new signature image URL
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, 
+            { signatureImage: signatureImageUrl }, 
+            { new: true }
+        ).select("-password");
+
+        return res.status(200).json({
+            success: true,
+            message: "Signature updated successfully",
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update signature"
+        });
+    }
+}
