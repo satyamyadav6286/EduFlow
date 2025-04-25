@@ -59,8 +59,13 @@ const getSignatureImage = async (instructorId, certificateDir) => {
 
 export const generateCertificate = async (userId, courseId) => {
   try {
-    // Generate a unique certificate code (16 characters)
-    const certificateId = crypto.randomBytes(8).toString("hex").toUpperCase();
+    // Generate a deterministic certificate ID based on userId and courseId
+    // This ensures the same certificate ID is generated across environments
+    const certificateId = crypto.createHash('md5')
+      .update(`${userId}-${courseId}-eduflow-certificate`)
+      .digest('hex')
+      .toUpperCase()
+      .substring(0, 16); // Keep it at 16 characters
     
     console.log(`Generating certificate with ID ${certificateId} for user ${userId} and course ${courseId}`);
     

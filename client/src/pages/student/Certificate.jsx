@@ -103,17 +103,23 @@ const Certificate = () => {
       const timestamp = Date.now();
       const uniqueId = Math.random().toString(36).substring(2, 10);
       
-      // Create the download URL
-      const downloadUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`;
+      // Create the download URL with multiple fallbacks to ensure reliability
+      const urls = [
+        `https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`,
+        `${serverBaseUrl}/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`
+      ];
       
-      // Create a hidden iframe for download
+      console.log("Attempting certificate download with URLs:", urls);
+      
+      // Try both methods to download
+      // 1. Create a hidden iframe for download
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
-      iframe.src = downloadUrl;
+      iframe.src = urls[0];
       document.body.appendChild(iframe);
       
-      // Also open in a new tab as backup
-      window.open(downloadUrl, '_blank');
+      // 2. Also open in a new tab as backup
+      window.open(urls[0], '_blank');
       
       // Clean up the iframe after a delay
       setTimeout(() => {
