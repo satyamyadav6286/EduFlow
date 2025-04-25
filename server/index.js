@@ -30,8 +30,8 @@ if (!process.env.SECRET_KEY) {
   // Continue execution but log the error
 }
 
-if (!process.env.MONGODB_URI) {
-  console.error("❌ CRITICAL ERROR: MONGODB_URI environment variable is not set!");
+if (!process.env.MONGO_URI) {
+  console.error("❌ CRITICAL ERROR: MONGO_URI environment variable is not set!");
   console.error("Database connection will fail.");
   // Continue execution but log the error  
 }

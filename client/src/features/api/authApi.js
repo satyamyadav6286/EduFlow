@@ -83,7 +83,7 @@ export const authApi = createApi({
                 method: "GET"
             }),
             async onQueryStarted(_, {queryFulfilled, dispatch}) {
-                try {
+                try { 
                     // Clear token on logout
                     localStorage.removeItem('token');
                     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";

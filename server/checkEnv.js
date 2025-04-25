@@ -5,21 +5,25 @@ dotenv.config();
 
 console.log('Checking required environment variables...');
 
-const requiredVars = [
+const requiredEnvVars = [
   'SECRET_KEY',
-  'MONGODB_URI',
+  'MONGO_URI',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'CERTIFICATE_PUBLIC_KEY',
+  'CERTIFICATE_PRIVATE_KEY',
   'NODE_ENV'
 ];
 
 let missingVars = [];
 
-requiredVars.forEach(varName => {
+requiredEnvVars.forEach(varName => {
   if (!process.env[varName]) {
     missingVars.push(varName);
     console.error(`❌ ERROR: ${varName} is not set`);
   } else {
     // Show first few characters of sensitive vars
-    if (varName === 'SECRET_KEY' || varName === 'MONGODB_URI') {
+    if (varName === 'SECRET_KEY' || varName === 'MONGO_URI') {
       const value = process.env[varName];
       const preview = value.substring(0, 8) + '...' + value.substring(value.length - 4);
       console.log(`✅ ${varName} is set: ${preview}`);

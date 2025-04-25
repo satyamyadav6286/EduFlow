@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGenerateCertificateMutation, useGetCertificateQuery } from '@/features/api/certificateApi';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Download, Share2, Award, Copy, ExternalLink, Printer, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSelector } from 'react-redux';
-import { serverBaseUrl } from '@/config/constants';
-import { getBestToken, refreshToken } from '@/middlewares/tokenValidator';
 
 const Certificate = () => {
   const location = useLocation();
@@ -23,22 +21,8 @@ const Certificate = () => {
   
   const [isDownloading, setIsDownloading] = useState(false);
   
-  // Check if this is one of our problem courses
-  const isSpecificPythonCourse = courseId === '67db3f15ff35889914dfc30b';
-  const isSpecificReactCourse = courseId === '67db418065f818f18e216e23';
-  
-  // Define specific certificate IDs for known courses
-  const specificCertificateIds = {
-    '67db3f15ff35889914dfc30b': 'C97194F1A153B675', // Python course
-    '67db418065f818f18e216e23': 'F87A45D21B9C36E0'  // React course
-  };
-  
-  // Determine if we should use a specific certificate ID
-  const isSpecificCourse = !!specificCertificateIds[courseId];
-  const specificCertificateId = specificCertificateIds[courseId];
-  
-  // Get certificate data, or generate if it doesn't exist
-  const [generateCertificate, { isLoading: isGenerating }] = useGenerateCertificateMutation();
+  // For API fallback
+  const [generateCertificate] = useGenerateCertificateMutation();
   const { 
     data: certificateData, 
     isLoading, 
@@ -48,43 +32,20 @@ const Certificate = () => {
   
   const certificate = certificateData?.data;
   
-  // Get the effective certificate ID (either from the API or hardcoded for specific course)
-  const effectiveCertificateId = isSpecificCourse ? specificCertificateId : certificate?.id;
-  
-  // For specific course, create a fixed certificate data object if none exists
-  useEffect(() => {
-    if (isSpecificCourse && error && !certificate) {
-      console.log("Using fixed certificate data for specific course");
-      // This is a workaround for the specific course to display the certificate UI
-      // even if the server hasn't returned certificate data yet
-      refetch();
-    }
-  }, [isSpecificCourse, error, certificate, refetch]);
-
   // Try to generate certificate if not found
   useEffect(() => {
-    if (error && !isGenerating && courseId) {
-      // Skip auto-generate for the specific course as we'll use the hardcoded ID
-      if (!isSpecificCourse) {
-        console.log("Certificate not found, attempting to generate");
-        handleGenerateCertificate();
-      }
+    if (error && courseId) {
+      handleGenerateCertificate();
     }
-  }, [error, courseId, isSpecificCourse, isGenerating]);
+  }, [error, courseId]);
   
   // Function to generate certificate with better error handling
   const handleGenerateCertificate = async () => {
     try {
       toast.info("Generating certificate...");
-      const response = await generateCertificate(courseId).unwrap();
-      
-      if (response.success) {
-        toast.success("Certificate generated successfully!");
-        // Reload certificate data after generating
-        refetch();
-      } else {
-        throw new Error(response.message || "Failed to generate certificate");
-      }
+      await generateCertificate(courseId).unwrap();
+      toast.success("Certificate generated successfully!");
+      refetch();
     } catch (error) {
       console.error("Certificate generation error:", error);
       toast.error(error.data?.message || error.message || "Failed to generate certificate");
@@ -109,51 +70,38 @@ const Certificate = () => {
       return;
     }
 
-    // Create LinkedIn share URL
     const certificateUrl = `${window.location.origin}/verify-certificate/${certificate.id}`;
     const title = `${certificate.course} - Course Completion Certificate`;
     const summary = `I've successfully completed the ${certificate.course} course on EduFlow Learning Platform`;
     
-    // Construct LinkedIn share URL with parameters
     const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certificateUrl)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}`;
     
-    // Open in new window
     window.open(linkedinShareUrl, '_blank', 'width=600,height=600');
     toast.success('Opening LinkedIn sharing window');
   };
 
-  // Simple direct download function that doesn't require authentication
+  // Direct download function
   const handleDownload = () => {
-    if (!effectiveCertificateId) {
+    if (!certificate?.id) {
       toast.error('Certificate not found');
       return;
     }
     
     try {
       setIsDownloading(true);
-      console.log("Starting certificate download...");
       toast.info("Preparing certificate...");
       
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
       
-      // Create the URL for the certificate - use different URLs based on course
-      let directFileUrl;
-      
-      if (isSpecificPythonCourse) {
-        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/C97194F1A153B675?t=${timestamp}`;
-      } else if (isSpecificReactCourse) {
-        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/F87A45D21B9C36E0?t=${timestamp}`;
-      } else {
-        directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${effectiveCertificateId}?t=${timestamp}`;
-      }
+      // Always use the direct URL from the server
+      const directFileUrl = `${import.meta.env.VITE_API_URL}/certificates/file/${certificate.id}?t=${timestamp}`;
       
       console.log("Downloading certificate from:", directFileUrl);
       
-      // Open in a new tab - most reliable method across browsers
+      // Open in a new tab
       window.open(directFileUrl, '_blank');
       
-      // Set success after a brief delay
       setTimeout(() => {
         setIsDownloading(false);
         toast.success("Certificate download initiated");
@@ -187,147 +135,19 @@ const Certificate = () => {
   }
 
   // Show loading state
-  if (isLoading || isGenerating) {
+  if (isLoading) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>{isGenerating ? "Generating Certificate" : "Loading Certificate"}</CardTitle>
+            <CardTitle>Loading Certificate</CardTitle>
             <CardDescription>
-              {isGenerating 
-                ? "Please wait while we generate your certificate..." 
-                : "Please wait while we retrieve your certificate..."}
+              Please wait while we retrieve your certificate...
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center p-8">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  // Show error state for API fetch errors (but not for our specific course)
-  if (error && !certificate && !isSpecificCourse) {
-    return (
-      <div className="container max-w-4xl mx-auto py-12 px-4">
-        <Card className="border-red-200">
-          <CardHeader className="text-center bg-red-50">
-            <CardTitle className="text-red-600">Certificate Not Available</CardTitle>
-            <CardDescription className="text-red-500">
-              {error.data?.message || "Failed to load certificate"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <p className="text-center mb-4">
-              You might not have completed all requirements for this course yet.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button onClick={() => navigate(`/course-progress/${courseId}`)}>
-                Return to Course
-              </Button>
-              <Button variant="secondary" onClick={handleGenerateCertificate} disabled={isGenerating}>
-                {isGenerating ? 'Generating...' : 'Try Again'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  // For specific course, we'll create a fallback UI if the certificate data isn't available
-  if (isSpecificCourse && !certificate) {
-    // Render the certificate view with hardcoded data for the specific course
-    return (
-      <div className="container max-w-4xl mx-auto py-12 px-4">
-        <Card className="border-2 border-green-100 dark:border-green-900">
-          <CardHeader className="text-center bg-green-50 dark:bg-green-900/20">
-            <div className="flex justify-center mb-4">
-              <div className="inline-flex items-center justify-center p-3 bg-green-100 dark:bg-green-800 rounded-full">
-                <Award className="h-8 w-8 text-green-600 dark:text-green-300" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl text-green-700 dark:text-green-300">Congratulations!</CardTitle>
-            <CardDescription className="text-green-600 dark:text-green-400">
-              You have successfully completed the course and earned your certificate.
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="py-6">
-            {/* Certificate details view (always shown) */}
-            <div className="p-8 text-center border rounded-lg bg-white dark:bg-gray-800">
-              <h3 className="text-xl font-semibold mb-3">Certificate of Completion</h3>
-              <p className="text-lg mb-2">This certifies that</p>
-              <p className="text-2xl font-bold mb-2">{user?.name}</p>
-              <p className="mb-4">has successfully completed the course</p>
-              <p className="text-xl font-bold mb-6">Python for Beginners</p>
-              <div className="flex justify-center mb-4">
-                <div className="h-px w-32 bg-gray-300 dark:bg-gray-600"></div>
-              </div>
-              <p className="text-sm">Date: {new Date().toLocaleDateString()}</p>
-              <p className="text-sm mt-2">Certificate ID: {specificCertificateId}</p>
-            </div>
-            
-            <div className="space-y-4 mt-6">
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
-                <h3 className="font-medium mb-3">Certificate Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Student Name</p>
-                    <p className="font-medium">{user?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Course</p>
-                    <p className="font-medium">Python for Beginners</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Issue Date</p>
-                    <p className="font-medium">{new Date().toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Certificate ID</p>
-                    <p className="font-medium">{specificCertificateId}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col sm:flex-row gap-3">
-            <Button 
-              onClick={handleDownload} 
-              className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Downloading...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Download Certificate
-                </>
-              )}
-            </Button>
-            <Button 
-              onClick={() => window.open(`https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${specificCertificateId}`, '_blank')} 
-              variant="outline" 
-              className="flex-1 flex items-center justify-center gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              View Certificate
-            </Button>
-            <Button 
-              onClick={() => navigate(`/course-progress/${courseId}`)} 
-              variant="secondary" 
-              className="flex-1"
-            >
-              Back to Course
-            </Button>
-          </CardFooter>
         </Card>
       </div>
     );
@@ -349,18 +169,18 @@ const Certificate = () => {
         </CardHeader>
         
         <CardContent className="py-6">
-          {/* Certificate details view (always shown) */}
+          {/* Certificate details view */}
           <div className="p-8 text-center border rounded-lg bg-white dark:bg-gray-800">
             <h3 className="text-xl font-semibold mb-3">Certificate of Completion</h3>
             <p className="text-lg mb-2">This certifies that</p>
             <p className="text-2xl font-bold mb-2">{user?.name}</p>
             <p className="mb-4">has successfully completed the course</p>
-            <p className="text-xl font-bold mb-6">{certificate?.course}</p>
+            <p className="text-xl font-bold mb-6">{certificate?.course || "Course"}</p>
             <div className="flex justify-center mb-4">
               <div className="h-px w-32 bg-gray-300 dark:bg-gray-600"></div>
             </div>
-            <p className="text-sm">Date: {new Date(certificate?.completionDate || certificate?.issuedDate).toLocaleDateString()}</p>
-            <p className="text-sm mt-2">Certificate ID: {certificate?.id}</p>
+            <p className="text-sm">Date: {certificate?.issuedDate ? new Date(certificate.issuedDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+            <p className="text-sm mt-2">Certificate ID: {certificate?.id || "Pending"}</p>
           </div>
           
           <div className="space-y-4 mt-6">
@@ -373,15 +193,15 @@ const Certificate = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">Course</p>
-                  <p className="font-medium">{certificate?.course}</p>
+                  <p className="font-medium">{certificate?.course || "Course"}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Issue Date</p>
-                  <p className="font-medium">{new Date(certificate?.issuedDate).toLocaleDateString()}</p>
+                  <p className="font-medium">{certificate?.issuedDate ? new Date(certificate.issuedDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Certificate ID</p>
-                  <p className="font-medium">{certificate?.id}</p>
+                  <p className="font-medium">{certificate?.id || "Pending"}</p>
                 </div>
               </div>
             </div>
@@ -412,7 +232,7 @@ const Certificate = () => {
           <Button 
             onClick={handleDownload} 
             className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-            disabled={isDownloading}
+            disabled={isDownloading || !certificate?.id}
           >
             {isDownloading ? (
               <>
@@ -427,9 +247,10 @@ const Certificate = () => {
             )}
           </Button>
           <Button 
-            onClick={() => window.open(`https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${effectiveCertificateId}`, '_blank')} 
+            onClick={() => certificate?.id && window.open(`${import.meta.env.VITE_API_URL}/certificates/file/${certificate.id}`, '_blank')} 
             variant="outline" 
             className="flex-1 flex items-center justify-center gap-2"
+            disabled={!certificate?.id}
           >
             <ExternalLink className="h-4 w-4" />
             View Certificate
