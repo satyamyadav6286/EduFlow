@@ -292,7 +292,6 @@ export const downloadCertificate = async (req, res) => {
     if (!fs.existsSync(pdfPath)) {
       console.log(`Certificate file not found at path: ${pdfPath}`);
       
-      // Try to regenerate certificate
       try {
         console.log(`Attempting to regenerate certificate: ${certificateId}`);
         console.log(`Using userId: ${certificate.userId}, courseId: ${certificate.courseId}`);
@@ -309,45 +308,63 @@ export const downloadCertificate = async (req, res) => {
           });
         }
         
-        // Regenerate the certificate
-        const result = await generateCertificatePDF(certificate.userId, certificate.courseId);
-        console.log(`Certificate regeneration result:`, result);
-        
-        // Check if regeneration worked and file exists
-        const regeneratedPath = path.resolve(certificateDir, `${result.certificateId}.pdf`);
-        
-        if (!fs.existsSync(regeneratedPath)) {
-          console.log(`Certificate regeneration failed to create file at: ${regeneratedPath}`);
+        // Try to regenerate the certificate with direct error catching
+        try {
+          console.log("Starting certificate PDF generation process");
           
-          // Try copying the file manually if there's a mismatch
-          if (result.certificateId !== certificateId && fs.existsSync(regeneratedPath)) {
-            fs.copyFileSync(regeneratedPath, pdfPath);
-            console.log(`Copied certificate from ${regeneratedPath} to ${pdfPath}`);
-          } else {
-            return res.status(404).json({
-              success: false,
-              message: "Certificate file not found and regeneration failed. Please try again.",
-            });
+          // Check directory permissions before proceeding
+          try {
+            fs.accessSync(certificateDir, fs.constants.W_OK);
+            console.log(`Certificate directory is writable: ${certificateDir}`);
+          } catch (fsError) {
+            console.error(`Certificate directory is not writable: ${certificateDir}`, fsError);
+            throw new Error(`Cannot write to certificate directory: ${fsError.message}`);
           }
-        } else if (result.certificateId !== certificateId) {
-          // If new certificate has different ID, copy it to match the requested ID
-          fs.copyFileSync(regeneratedPath, pdfPath);
-          console.log(`Copied certificate from ${regeneratedPath} to ${pdfPath}`);
+          
+          // Regenerate the certificate with additional troubleshooting
+          const result = await generateCertificatePDF(certificate.userId, certificate.courseId);
+          console.log(`Certificate regeneration successful, ID: ${result.certificateId}`);
+          
+          // Verify the file exists after regeneration
+          const regeneratedFilePath = path.resolve(certificateDir, `${result.certificateId}.pdf`);
+          if (!fs.existsSync(regeneratedFilePath)) {
+            console.error(`Certificate was regenerated but file not found at: ${regeneratedFilePath}`);
+            throw new Error("Certificate regeneration succeeded but file not created");
+          }
+          
+          // If files are different, update the paths
+          if (result.certificateId !== certificateId) {
+            // Copy file to match the requested ID
+            try {
+              fs.copyFileSync(regeneratedFilePath, pdfPath);
+              console.log(`Copied certificate from ${regeneratedFilePath} to ${pdfPath}`);
+            } catch (copyError) {
+              console.error(`Error copying certificate file:`, copyError);
+              throw new Error(`File copy failed: ${copyError.message}`);
+            }
+          }
+          
+          // Update certificate if needed
+          if (certificate.pdfPath !== result.pdfUrl) {
+            certificate.pdfPath = result.pdfUrl;
+            await certificate.save();
+            console.log(`Updated certificate record with new path: ${result.pdfUrl}`);
+          }
+          
+        } catch (pdfError) {
+          console.error("Error during certificate PDF generation:", pdfError);
+          return res.status(500).json({
+            success: false,
+            message: `Failed to regenerate certificate PDF: ${pdfError.message}`,
+            error: pdfError.toString()
+          });
         }
-        
-        // Update certificate path if needed
-        if (certificate.pdfPath !== result.pdfUrl) {
-          certificate.pdfPath = result.pdfUrl;
-          await certificate.save();
-          console.log(`Updated certificate record with new path: ${result.pdfUrl}`);
-        }
-        
-        console.log("Certificate regenerated successfully");
       } catch (genError) {
-        console.error("Error regenerating certificate:", genError);
+        console.error("Error in certificate regeneration process:", genError);
         return res.status(500).json({
           success: false,
           message: "Failed to regenerate certificate. Please try again later.",
+          error: genError.toString()
         });
       }
     }
@@ -355,13 +372,40 @@ export const downloadCertificate = async (req, res) => {
     // Check again if file exists after regeneration attempt
     if (!fs.existsSync(pdfPath)) {
       console.log(`Certificate file still not found at path after regeneration attempt: ${pdfPath}`);
+      
+      // Do a directory listing to see what files are there
+      try {
+        const files = fs.readdirSync(certificateDir);
+        console.log(`Files in certificate directory (${files.length} files):`);
+        files.forEach(file => console.log(` - ${file}`));
+      } catch (readError) {
+        console.error(`Error reading certificate directory: ${readError.message}`);
+      }
+      
       return res.status(404).json({
         success: false,
-        message: "Certificate file not found. Please try regenerating your certificate.",
+        message: "Certificate file not found even after regeneration attempt. Please contact support.",
       });
     }
 
     console.log(`Found certificate file at: ${pdfPath}`);
+    
+    // Get file stats to verify it's a valid file
+    let fileStats;
+    try {
+      fileStats = fs.statSync(pdfPath);
+      console.log(`Certificate file size: ${fileStats.size} bytes`);
+      
+      if (fileStats.size === 0) {
+        throw new Error("Certificate file exists but is empty");
+      }
+    } catch (statsError) {
+      console.error(`Error checking certificate file stats:`, statsError);
+      return res.status(500).json({
+        success: false,
+        message: "Certificate file exists but cannot be read",
+      });
+    }
 
     // Set response headers for PDF
     res.setHeader("Content-Type", "application/pdf");
@@ -380,6 +424,7 @@ export const downloadCertificate = async (req, res) => {
         res.status(500).json({
           success: false,
           message: "Error streaming certificate",
+          error: err.toString()
         });
       }
     });
@@ -391,6 +436,7 @@ export const downloadCertificate = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to download certificate",
+      error: error.toString()
     });
   }
 };
