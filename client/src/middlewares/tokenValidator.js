@@ -40,6 +40,9 @@ export const refreshToken = async (force = false) => {
     
     if (!refreshResponse.ok) {
       console.error(`Token refresh failed with status: ${refreshResponse.status}`);
+      // Clear any invalid tokens
+      localStorage.removeItem('token');
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       return { 
         success: false, 
         token: null, 
@@ -93,7 +96,9 @@ export const getBestToken = () => {
   // Then check cookies
   const cookies = document.cookie.split(';').reduce((cookies, cookie) => {
     const [name, value] = cookie.split('=').map(c => c.trim());
-    cookies[name] = value;
+    if (name && value) {
+      cookies[name] = value;
+    }
     return cookies;
   }, {});
   
