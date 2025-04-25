@@ -101,29 +101,18 @@ const Certificate = () => {
       
       // Generate a unique ID for this download to prevent caching
       const timestamp = Date.now();
-      const uniqueId = Math.random().toString(36).substring(2, 10);
       
-      // Create the download URL with multiple fallbacks to ensure reliability
-      const urls = [
-        `https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`,
-        `${serverBaseUrl}/api/v1/certificates/${certificate.id}/download?t=${timestamp}&r=${uniqueId}`
-      ];
+      // Create the most reliable direct file URL for the certificate
+      // This uses the special /file/ endpoint that doesn't require auth tokens
+      const directFileUrl = `https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${certificate.id}?t=${timestamp}`;
       
-      console.log("Attempting certificate download with URLs:", urls);
+      console.log("Downloading certificate from:", directFileUrl);
       
-      // Try both methods to download
-      // 1. Create a hidden iframe for download
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = urls[0];
-      document.body.appendChild(iframe);
+      // Open in a new tab - most reliable method across browsers
+      window.open(directFileUrl, '_blank');
       
-      // 2. Also open in a new tab as backup
-      window.open(urls[0], '_blank');
-      
-      // Clean up the iframe after a delay
+      // Set success after a brief delay
       setTimeout(() => {
-        document.body.removeChild(iframe);
         setIsDownloading(false);
         toast.success("Certificate download initiated");
       }, 1000);
@@ -278,7 +267,7 @@ const Certificate = () => {
             )}
           </Button>
           <Button 
-            onClick={() => window.open(`https://eduflow-pvb3.onrender.com/api/v1/certificates/${certificate.id}/download`, '_blank')} 
+            onClick={() => window.open(`https://eduflow-pvb3.onrender.com/api/v1/certificates/file/${certificate.id}`, '_blank')} 
             variant="outline" 
             className="flex-1 flex items-center justify-center gap-2"
           >

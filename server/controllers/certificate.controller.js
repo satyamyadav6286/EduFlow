@@ -282,6 +282,13 @@ export const downloadCertificate = async (req, res) => {
     if (!fs.existsSync(certificateDir)) {
       console.log(`Creating certificate directory: ${certificateDir}`);
       fs.mkdirSync(certificateDir, { recursive: true });
+      
+      // Set permissions to ensure it's writable
+      try {
+        fs.chmodSync(certificateDir, 0o777);
+      } catch (permError) {
+        console.log(`Warning: Could not set directory permissions: ${permError.message}`);
+      }
     }
     
     // Get the file path 
@@ -332,23 +339,16 @@ export const downloadCertificate = async (req, res) => {
             throw new Error("Certificate regeneration succeeded but file not created");
           }
           
-          // If files are different, update the paths
+          // If the new certificate ID is different from the requested one,
+          // update the database record to maintain consistency
           if (result.certificateId !== certificateId) {
-            // Copy file to match the requested ID
-            try {
-              fs.copyFileSync(regeneratedFilePath, pdfPath);
-              console.log(`Copied certificate from ${regeneratedFilePath} to ${pdfPath}`);
-            } catch (copyError) {
-              console.error(`Error copying certificate file:`, copyError);
-              throw new Error(`File copy failed: ${copyError.message}`);
-            }
-          }
-          
-          // Update certificate if needed
-          if (certificate.pdfPath !== result.pdfUrl) {
+            console.log(`Note: New certificate ID ${result.certificateId} differs from requested ${certificateId}`);
+            certificate.certificateId = result.certificateId;
             certificate.pdfPath = result.pdfUrl;
             await certificate.save();
-            console.log(`Updated certificate record with new path: ${result.pdfUrl}`);
+            
+            // Redirect to the new certificate
+            return res.redirect(`/api/v1/certificates/${result.certificateId}/download`);
           }
           
         } catch (pdfError) {
