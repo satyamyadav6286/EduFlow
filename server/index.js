@@ -39,7 +39,11 @@ app.use(cors({
       // Add Vercel domains
       "https://eduflow-web.vercel.app", 
       "https://eduflow-git-main.vercel.app", 
-      "https://eduflow.vercel.app"
+      "https://eduflow.vercel.app",
+      // Additional Vercel domains
+      "https://edu-flow-satyam-yadavs-projects-73e3f153.vercel.app",
+      "https://edu-flow-git-main-satyam-yadavs-projects-73e3f153.vercel.app",
+      "https://edu-flow-brown.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
