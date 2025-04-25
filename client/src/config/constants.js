@@ -1,7 +1,7 @@
 // This file contains application-wide constants
 
 // Server base URL (without API path) for direct server requests
-export const serverBaseUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+export const serverBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Other application constants can be added here
 export const APP_NAME = 'EduFlow';
