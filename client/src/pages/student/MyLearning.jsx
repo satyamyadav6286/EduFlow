@@ -3,9 +3,18 @@ import Course from "./Course";
 import { useLoadUserQuery } from "@/features/api/authApi";
 
 const MyLearning = () => { 
-  const {data, isLoading} = useLoadUserQuery();
+  const {data, isLoading, error} = useLoadUserQuery();
 
-  const myLearning = data?.user.enrolledCourses || [];
+  if (error) {
+    console.error("Error loading user data:", error);
+    return <div className="max-w-4xl mx-auto my-10 px-4 md:px-0">
+      <h1 className="font-bold text-2xl">MY LEARNING</h1>
+      <p className="my-5 text-red-500">Failed to load your courses. Please try again later.</p>
+    </div>;
+  }
+
+  const myLearning = data?.user?.enrolledCourses || [];
+  
   return (
     <div className="max-w-4xl mx-auto my-10 px-4 md:px-0">
       <h1 className="font-bold text-2xl">MY LEARNING</h1>
@@ -17,7 +26,7 @@ const MyLearning = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {myLearning.map((course, index) => (
-              <Course key={index} course={course}/>
+              <Course key={course._id || index} course={course}/>
             ))}
           </div>
         )}

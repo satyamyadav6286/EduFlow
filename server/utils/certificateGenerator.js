@@ -181,7 +181,7 @@ export const generateCertificate = async (userId, courseId) => {
     doc.rect(45, 45, pageWidth - 90, pageHeight - 90)
        .lineWidth(1)
        .strokeColor('#1e40af')
-       .dash(5, { space: 10 })
+       .dash(5, 10)
        .stroke();
     
     // Reset dash
