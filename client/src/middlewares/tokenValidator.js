@@ -17,7 +17,7 @@ export const refreshToken = async (force = false) => {
       console.log("Skipping refresh - too soon since last refresh");
       return { 
         success: false, 
-        token: getBestToken(), 
+        token: null, 
         message: "Skipped refresh - too recent" 
       };
     }
@@ -87,51 +87,15 @@ export const refreshToken = async (force = false) => {
  * @returns {string|null} The most recent token or null if none found
  */
 export const getBestToken = () => {
-  // First check localStorage
-  let token = localStorage.getItem('token');
-  
-  // Then check cookies
-  const cookies = document.cookie.split(';').reduce((cookies, cookie) => {
-    const [name, value] = cookie.split('=').map(c => c.trim());
-    if (name && value) {
-      cookies[name] = value;
-    }
-    return cookies;
-  }, {});
-  
-  // If cookie token exists and is different, use it (likely more recent)
-  if (cookies.token && cookies.token !== token) {
-    console.log("Using more recent token from cookies");
-    token = cookies.token;
-    // Update localStorage
-    localStorage.setItem('token', token);
-  }
-  
-  return token;
+  // Disabled automatic token retrieval to require manual login
+  return null;
 };
 
 /**
- * Ensures a valid token is available, attempting refresh if needed
- * @param {boolean} forceRefresh Whether to force a token refresh
- * @returns {Promise<string|null>} A valid token or null if unable to get one
+ * Ensures a valid token is available, refreshing if necessary
+ * @returns {Promise<string|null>} A valid token or null if unavailable
  */
-export const ensureValidToken = async (forceRefresh = false) => {
-  if (forceRefresh) {
-    // If force refresh, try to get a fresh token
-    const refreshResult = await refreshToken(true);
-    if (refreshResult.success) {
-      return refreshResult.token;
-    }
-  }
-  
-  // Get the best token we currently have
-  let token = getBestToken();
-  
-  if (!token) {
-    // No token found, try to refresh
-    const refreshResult = await refreshToken();
-    return refreshResult.success ? refreshResult.token : null;
-  }
-  
-  return token;
+export const ensureValidToken = async () => {
+  // Disabled automatic token validation to require manual login
+  return null;
 }; 

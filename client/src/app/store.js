@@ -23,7 +23,4 @@ export const appStore = configureStore({
     )
 });
 
-const initializeApp = async () => {
-    await appStore.dispatch(authApi.endpoints.loadUser.initiate({},{forceRefetch:true}))
-}
-initializeApp();
+// Remove or comment out the initializeApp function that auto-loads user data

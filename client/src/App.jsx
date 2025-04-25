@@ -37,6 +37,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { ErrorBoundary, NotFound } from "./components/ErrorBoundary";
 import QuizScorecard from "./pages/student/QuizCertificate";
 import { ApiUrlLogger } from "./utils/ApiUrlLogger";
+import { useEffect } from "react";
 
 const appRouter = createBrowserRouter([
   {
@@ -207,7 +208,19 @@ const appRouter = createBrowserRouter([
   },
 ]);
 
+// Function to clear any existing tokens
+const clearTokens = () => {
+  localStorage.removeItem('token');
+  document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  console.log("Cleared all authentication tokens on app load");
+};
+
 export default function App() {
+  // Clear tokens when app loads
+  useEffect(() => {
+    clearTokens();
+  }, []);
+
   return (
     <ThemeProvider defaultTheme="system" storageKey="eduflow-ui-theme">
       <RouterProvider router={appRouter} />
