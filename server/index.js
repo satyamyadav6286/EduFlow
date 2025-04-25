@@ -20,7 +20,21 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({});
+// Load and check environment variables
+dotenv.config();
+
+// Check critical environment variables
+if (!process.env.SECRET_KEY) {
+  console.error("❌ CRITICAL ERROR: SECRET_KEY environment variable is not set!");
+  console.error("Authentication will fail until this is fixed.");
+  // Continue execution but log the error
+}
+
+if (!process.env.MONGODB_URI) {
+  console.error("❌ CRITICAL ERROR: MONGODB_URI environment variable is not set!");
+  console.error("Database connection will fail.");
+  // Continue execution but log the error  
+}
 
 // call database connection here
 connectDB();
@@ -101,6 +115,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`Server listening at port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`SECRET_KEY set: ${process.env.SECRET_KEY ? 'Yes' : 'NO - AUTHENTICATION WILL FAIL'}`);
 });
 
 
