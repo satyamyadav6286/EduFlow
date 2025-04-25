@@ -47,8 +47,19 @@ app.use(cors({
       "https://edu-flow-brown.vercel.app"
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type", 
+      "Authorization", 
+      "Cache-Control", 
+      "Pragma", 
+      "X-Requested-With", 
+      "Accept", 
+      "Origin", 
+      "Access-Control-Request-Method", 
+      "Access-Control-Request-Headers"
+    ],
+    exposedHeaders: ["set-cookie"]
 }));
  
 // Serve static certificate files

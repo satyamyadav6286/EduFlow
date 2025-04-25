@@ -31,11 +31,8 @@ export const refreshToken = async (force = false) => {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store',
-        'Pragma': 'no-cache'
-      },
-      cache: 'no-store'
+        'Content-Type': 'application/json'
+      }
     });
     
     if (!refreshResponse.ok) {
