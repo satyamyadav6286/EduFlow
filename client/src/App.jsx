@@ -36,6 +36,7 @@ import PurchaseCourseProtectedRoute from "./components/PurchaseCourseProtectedRo
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ErrorBoundary, NotFound } from "./components/ErrorBoundary";
 import QuizScorecard from "./pages/student/QuizCertificate";
+import { ApiUrlLogger } from "./utils/ApiUrlLogger";
 
 const appRouter = createBrowserRouter([
   {
@@ -198,14 +199,11 @@ const appRouter = createBrowserRouter([
   },
 ]);
 
-function App() {
+export default function App() {
   return (
-    <main>
-      <ThemeProvider>
+    <ThemeProvider defaultTheme="system" storageKey="eduflow-ui-theme">
       <RouterProvider router={appRouter} />
-      </ThemeProvider>
-    </main>
+      <ApiUrlLogger />
+    </ThemeProvider>
   );
 }
-
-export default App;

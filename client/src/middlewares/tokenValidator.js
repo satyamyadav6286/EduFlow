@@ -23,6 +23,7 @@ export const refreshToken = async (force = false) => {
     }
     
     console.log("Attempting to refresh authentication token");
+    console.log("Using server base URL:", serverBaseUrl);
     lastRefreshTime = now;
     
     // Try to refresh the token by calling the auth refresh endpoint
