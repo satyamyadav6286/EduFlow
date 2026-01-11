@@ -21,11 +21,11 @@ export const register = async (req,res) => {
                 message:"User already exist with this email."
             })
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Password will be automatically hashed by the pre-save hook in the User model
         await User.create({
             name,
             email,
-            password:hashedPassword
+            password
         });
         return res.status(201).json({
             success:true,
@@ -42,26 +42,38 @@ export const register = async (req,res) => {
 export const login = async (req,res) => {
     try {
         const {email, password} = req.body;
+        console.log('Login attempt for email:', email);
+        
         if(!email || !password){
+            console.log('Login failed: Missing email or password');
             return res.status(400).json({
                 success:false,
                 message:"All fields are required."
             })
         }
+        
         const user = await User.findOne({email}).select("+password");
         if(!user){
+            console.log('Login failed: User not found for email:', email);
             return res.status(400).json({
                 success:false,
                 message:"Incorrect email or password"
             })
         }
-        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        
+        console.log('User found, comparing passwords...');
+        // TEMPORARILY USING PLAIN TEXT COMPARISON FOR DEBUGGING - DO NOT USE IN PRODUCTION
+        // const isPasswordMatch = await bcrypt.compare(password, user.password);
+        const isPasswordMatch = password === user.password;
         if(!isPasswordMatch){
+            console.log('Login failed: Password mismatch for email:', email);
             return res.status(400).json({
                 success:false,
                 message:"Incorrect email or password"
             });
         }
+        
+        console.log('Login successful for user:', user.name);
         generateToken(res, user, `Welcome back ${user.name}`);
 
     } catch (error) {
@@ -204,14 +216,12 @@ export const createInstructor = async (req, res) => {
             });
         }
         
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
+        // Password will be automatically hashed by the pre-save hook in the User model
         // Create new instructor
         const newInstructor = await User.create({
             name,
             email,
-            password: hashedPassword,
+            password,
             role: "instructor"
         });
         

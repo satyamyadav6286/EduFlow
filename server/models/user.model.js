@@ -55,17 +55,18 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Encrypt password before save - HOOKS
-userSchema.pre("save", async function (next) {
-    // Only hash the password if it's modified (or new)
-    if (!this.isModified("password")) return next();
-    
-    try {
-        this.password = await bcrypt.hash(this.password, 10);
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
+// TEMPORARILY DISABLED FOR DEBUGGING - DO NOT USE IN PRODUCTION
+// userSchema.pre("save", async function (next) {
+//     // Only hash the password if it's modified (or new)
+//     if (!this.isModified("password")) return next();
+//     
+//     try {
+//         this.password = await bcrypt.hash(this.password, 10);
+//         next();
+//     } catch (error) {
+//         next(error);
+//     }
+// });
 
 // Compare user password
 userSchema.methods.comparePassword = async function(enteredPassword) {

@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 
 export const generateToken = (res, user, message) => {
   const token = jwt.sign({ 
-    userId: user._id, 
+    userId: user._id || user.id, 
     role: user.role 
   }, process.env.SECRET_KEY, {
     expiresIn: "1d",
@@ -21,13 +21,17 @@ export const generateToken = (res, user, message) => {
 
   console.log('Setting authentication token cookie with options:', cookieOptions);
 
+  // Convert user to plain object and exclude password
+  const userObj = user.toObject ? user.toObject() : user;
+  const { password, ...userWithoutPassword } = userObj;
+
   return res
     .status(200)
     .cookie("token", token, cookieOptions)
     .json({
       success: true,
       message,
-      user,
+      user: userWithoutPassword,
       token // Include token in response body for client storage
     });
 };
