@@ -1,4 +1,3 @@
-// McgPr7oX7v1mMcbN
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,12 +20,18 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const Login = () => {
+  const navigate = useNavigate();
+
   const [signupInput, setSignupInput] = useState({
     name: "",
     email: "",
     password: "",
   });
-  const [loginInput, setLoginInput] = useState({ email: "", password: "" });
+
+  const [loginInput, setLoginInput] = useState({
+    email: "",
+    password: "",
+  });
 
   const [
     registerUser,
@@ -37,6 +42,7 @@ const Login = () => {
       isSuccess: registerIsSuccess,
     },
   ] = useRegisterUserMutation();
+
   const [
     loginUser,
     {
@@ -46,167 +52,190 @@ const Login = () => {
       isSuccess: loginIsSuccess,
     },
   ] = useLoginUserMutation();
-  const navigate = useNavigate();
 
   const changeInputHandler = (e, type) => {
     const { name, value } = e.target;
+
     if (type === "signup") {
-      setSignupInput({ ...signupInput, [name]: value });
+      setSignupInput((prev) => ({ ...prev, [name]: value }));
     } else {
-      setLoginInput({ ...loginInput, [name]: value });
+      setLoginInput((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleRegistration = async (type) => {
-    const inputData = type === "signup" ? signupInput : loginInput;
-    const action = type === "signup" ? registerUser : loginUser;
-    await action(inputData);
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!signupInput.name || !signupInput.email || !signupInput.password) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    await registerUser(signupInput);
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!loginInput.email || !loginInput.password) {
+      toast.error("Email and password are required");
+      return;
+    }
+
+    await loginUser(loginInput);
   };
 
   useEffect(() => {
-    if(registerIsSuccess && registerData){
-      toast.success(registerData?.message || "Signup successful.")
+    if (registerIsSuccess && registerData) {
+      toast.success(registerData?.message || "Signup successful");
     }
-    if(registerError){
-      toast.error(registerError?.data?.message || "Signup Failed");
+
+    if (registerError) {
+      toast.error(registerError?.data?.message || "Signup failed");
     }
-    if(loginIsSuccess && loginData){
-      toast.success(loginData?.message || "Login successful.");
+
+    if (loginIsSuccess && loginData) {
+      toast.success(loginData?.message || "Login successful");
       navigate("/");
     }
-    if(loginError){ 
-      toast.error(loginError?.data?.message || "Login Failed");
+
+    if (loginError) {
+      toast.error(loginError?.data?.message || "Login failed");
     }
   }, [
-    loginIsLoading,
-    registerIsLoading,
-    loginData,
+    registerIsSuccess,
     registerData,
-    loginError,
     registerError,
     loginIsSuccess,
-    registerIsSuccess,
-    navigate
+    loginData,
+    loginError,
+    navigate,
   ]);
 
   return (
-    <div className="flex items-center w-full justify-center mt-20">
+    <div className="flex items-center justify-center w-full mt-20">
       <Tabs defaultValue="login" className="w-[400px]">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="signup">Signup</TabsTrigger>
           <TabsTrigger value="login">Login</TabsTrigger>
         </TabsList>
+
+        {/* ================= SIGNUP ================= */}
         <TabsContent value="signup">
           <Card>
             <CardHeader>
               <CardTitle>Signup</CardTitle>
-              <CardDescription>
-                Create a new account and click signup when you're done.
-              </CardDescription>
+              <CardDescription>Create a new account</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  type="text"
-                  name="name"
-                  value={signupInput.name}
-                  onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. Satyam Yadav"
-                  required="true"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="username">Email</Label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={signupInput.email}
-                  onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. xyz@gmail.com"
-                  required="true"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="username">Password</Label>
-                <Input
-                  type="password"
-                  name="password"
-                  value={signupInput.password}
-                  onChange={(e) => changeInputHandler(e, "signup")}
-                  placeholder="Eg. xyz@123"
-                  required="true"
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                disabled={registerIsLoading}
-                onClick={() => handleRegistration("signup")}
-              >
-                {registerIsLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
-                    wait
-                  </>
-                ) : (
-                  "Signup"
-                )}
-              </Button>
-            </CardFooter>
+
+            <form onSubmit={handleSignupSubmit}>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={signupInput.name}
+                    onChange={(e) => changeInputHandler(e, "signup")}
+                    placeholder="Satyam Yadav"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    name="email"
+                    value={signupInput.email}
+                    onChange={(e) => changeInputHandler(e, "signup")}
+                    placeholder="xyz@gmail.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label>Password</Label>
+                  <Input
+                    type="password"
+                    name="password"
+                    value={signupInput.password}
+                    onChange={(e) => changeInputHandler(e, "signup")}
+                    placeholder="xyz@123"
+                    required
+                  />
+                </div>
+              </CardContent>
+
+              <CardFooter>
+                <Button type="submit" disabled={registerIsLoading}>
+                  {registerIsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Signup"
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
           </Card>
         </TabsContent>
+
+        {/* ================= LOGIN ================= */}
         <TabsContent value="login">
           <Card>
             <CardHeader>
               <CardTitle>Login</CardTitle>
-              <CardDescription>
-                Login your password here. After signup, you'll be logged in.
-              </CardDescription>
+              <CardDescription>Login to your account</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="current">Email</Label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={loginInput.email}
-                  onChange={(e) => changeInputHandler(e, "login")}
-                  placeholder="Eg. xyz@gmail.com"
-                  required="true"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="new">Password</Label>
-                <Input
-                  type="password"
-                  name="password"
-                  value={loginInput.password}
-                  onChange={(e) => changeInputHandler(e, "login")}
-                  placeholder="Eg. xyz@123"
-                  required="true"
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                disabled={loginIsLoading}
-                onClick={() => handleRegistration("login")}
-              >
-                {loginIsLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
-                    wait
-                  </>
-                ) : (
-                  "Login"
-                )}
-              </Button>
-            </CardFooter>
+
+            <form onSubmit={handleLoginSubmit}>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    name="email"
+                    value={loginInput.email}
+                    onChange={(e) => changeInputHandler(e, "login")}
+                    placeholder="xyz@gmail.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label>Password</Label>
+                  <Input
+                    type="password"
+                    name="password"
+                    value={loginInput.password}
+                    onChange={(e) => changeInputHandler(e, "login")}
+                    placeholder="xyz@123"
+                    required
+                  />
+                </div>
+              </CardContent>
+
+              <CardFooter>
+                <Button type="submit" disabled={loginIsLoading}>
+                  {loginIsLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Login"
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
 };
+
 export default Login;
