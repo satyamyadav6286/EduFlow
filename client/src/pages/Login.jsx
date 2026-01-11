@@ -91,7 +91,12 @@ const Login = () => {
     }
 
     if (registerError) {
-      toast.error(registerError?.data?.message || "Signup failed");
+      console.error("Register error:", registerError);
+      const errorMessage = registerError?.data?.message || 
+                          registerError?.data?.data?.message || 
+                          registerError?.message || 
+                          "Signup failed";
+      toast.error(errorMessage);
     }
 
     if (loginIsSuccess && loginData) {
@@ -100,7 +105,12 @@ const Login = () => {
     }
 
     if (loginError) {
-      toast.error(loginError?.data?.message || "Login failed");
+      console.error("Login error:", loginError);
+      const errorMessage = loginError?.data?.message || 
+                          loginError?.data?.data?.message || 
+                          loginError?.message || 
+                          "Login failed";
+      toast.error(errorMessage);
     }
   }, [
     registerIsSuccess,

@@ -65,18 +65,32 @@ export const authApi = createApi({
     baseQuery: customFetchWithAuth,
     endpoints: (builder) => ({
         registerUser: builder.mutation({
-            query: (inputData) => ({
-                url: "register",
-                method: "POST",
-                body: inputData
-            })
+            query: (inputData) => {
+                console.log("Register request data:", inputData);
+                return {
+                    url: "register",
+                    method: "POST",
+                    body: inputData
+                };
+            },
+            transformErrorResponse: (response) => {
+                console.error("Register API error response:", response);
+                return {
+                    status: response.status,
+                    message: response.data?.message || 'Registration failed',
+                    data: response.data
+                };
+            }
         }),
         loginUser: builder.mutation({
-            query: (inputData) => ({
-                url: "login",
-                method: "POST",
-                body: inputData
-            }),
+            query: (inputData) => {
+                console.log("Login request data:", inputData);
+                return {
+                    url: "login",
+                    method: "POST",
+                    body: inputData
+                };
+            },
             async onQueryStarted(_, {queryFulfilled, dispatch}) {
                 try {
                     const result = await queryFulfilled;
