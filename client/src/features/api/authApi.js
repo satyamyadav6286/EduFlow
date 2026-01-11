@@ -5,7 +5,20 @@ import { getBestToken, refreshToken, ensureValidToken } from "@/middlewares/toke
 
 // Create a custom fetch function that will handle token refresh
 const customFetchWithAuth = async (args, api, extraOptions) => {
-    // Start with the standard fetchBaseQuery
+    // Check if this is a login or register endpoint - these don't need auth tokens
+    const url = typeof args === 'string' ? args : args.url;
+    const isAuthEndpoint = url === 'login' || url === 'register';
+    
+    // For login/register, use simple baseQuery without token logic
+    if (isAuthEndpoint) {
+        const simpleBaseQuery = fetchBaseQuery({
+            baseUrl: USER_API,
+            credentials: 'include',
+        });
+        return await simpleBaseQuery(args, api, extraOptions);
+    }
+    
+    // For other endpoints, use token-based auth
     const baseQuery = fetchBaseQuery({
         baseUrl: USER_API,
         credentials: 'include',
