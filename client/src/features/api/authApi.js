@@ -86,8 +86,17 @@ export const authApi = createApi({
                     }
                     dispatch(userLoggedIn({user: result.data.user}));
                 } catch (error) {
-                    console.log(error);
+                    console.error("Login error:", error);
+                    // Error is handled by RTK Query and will be available in loginError
                 }
+            },
+            transformErrorResponse: (response) => {
+                console.error("Login API error response:", response);
+                return {
+                    status: response.status,
+                    message: response.data?.message || 'Login failed',
+                    data: response.data
+                };
             }
         }),
         logoutUser: builder.mutation({
